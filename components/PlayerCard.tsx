@@ -198,7 +198,10 @@ function ConsistencyDisplay({ goal, onLog, onDelete }: { goal: ConsistencyGoal; 
   );
 }
 
-export default function PlayerCard({ player, onCheckIn, onDeleteGoal, onAddGoal, onDeletePlayer, expanded = false, onToggle, isMe = false }: Props) { Props) {
+export default function PlayerCard({
+  player, onCheckIn, onDeleteGoal, onAddGoal, onDeletePlayer,
+  expanded = false, onToggle, isMe = false
+}: Props) {
   const overall = getPlayerOverall(player);
   const complete = overall >= 100;
 

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { AppData, Player, Goal } from '../types';
-import { load, save, addPlayer, deleteGoal, logRate, logHabit, logConsistency, getPlayerOverall } from '../lib/storage';
+import { load, save, addPlayer, deleteGoal, logRate, logHabit, logConsistency, getPlayerOverall, addGoalToPlayer } from '../lib/storage';
 import OnboardingFlow from '../components/OnboardingFlow';
 import PlayerCard from '../components/PlayerCard';
 import CheckInModal from '../components/CheckInModal';
 import AnimalAvatarImg from '../components/AnimalAvatar';
 import SoccerBall from '../components/SoccerBall';
+import AddGoalModal from '../components/AddGoalModal';
 
 export default function Home() {
   const [data, setData] = useState<AppData | null>(null);
@@ -14,6 +15,7 @@ export default function Home() {
   const [checkIn, setCheckIn] = useState<{ player: Player; goal: Goal } | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [celebrating, setCelebrating] = useState(false);
+  const [addGoalPlayer, setAddGoalPlayer] = useState<Player | null>(null);
 
   useEffect(() => { setData(load()); }, []);
   const persist = (d: AppData) => { setData(d); save(d); };
@@ -158,6 +160,7 @@ export default function Home() {
                 {data.players.map(player => (
                   <PlayerCard key={player.id} player={player}
                     onCheckIn={(p,g) => setCheckIn({ player:p, goal:g })}
+                    onAddGoal={(p) => setAddGoalPlayer(p)}
                     onDeleteGoal={(p,gid) => persist(deleteGoal(data,p.id,gid))}
                     expanded={expandedId===player.id}
                     onToggle={() => setExpandedId(expandedId===player.id?null:player.id)}/>
@@ -194,6 +197,13 @@ export default function Home() {
           onSubmitHabit={(c,n) => handleCheckInSubmit(undefined,c,undefined,undefined,n)}
           onSubmitConsistency={(h,t,n) => handleCheckInSubmit(undefined,undefined,h,t,n)}
           onClose={() => setCheckIn(null)}/>
+      )}
+
+      {addGoalPlayer && data && (
+        <AddGoalModal
+          player={addGoalPlayer}
+          onAdd={(goal) => { persist(addGoalToPlayer(data, addGoalPlayer.id, goal)); setAddGoalPlayer(null); }}
+          onClose={() => setAddGoalPlayer(null)}/>
       )}
     </>
   );

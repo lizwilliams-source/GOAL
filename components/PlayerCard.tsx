@@ -7,9 +7,10 @@ interface Props {
   player: Player;
   onCheckIn: (player: Player, goal: Goal) => void;
   onDeleteGoal: (player: Player, goalId: string) => void;
+  onAddGoal: (player: Player) => void;
   expanded?: boolean;
   onToggle?: () => void;
-  onAddGoal: (player: Player) => void;
+  isMe?: boolean;
 }
 
 function Bar({ pct, color }: { pct: number; color?: string }) {

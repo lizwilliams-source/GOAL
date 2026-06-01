@@ -1,0 +1,202 @@
+@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: 'Black Han Sans';
+  --font-body: 'Inter';
+  --pitch-green: #1a6b2f;
+  --pitch-dark: #155228;
+  --pitch-light: #1e7d35;
+  --gold: #f9c923;
+  --gold-dark: #d4a017;
+  --white: #ffffff;
+  --net-white: rgba(255,255,255,0.15);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #0f3d1a;
+  min-height: 100vh;
+}
+
+/* Pitch stripe background */
+.pitch-bg {
+  background-color: #1a6b2f;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 60px,
+    rgba(0,0,0,0.06) 60px,
+    rgba(0,0,0,0.06) 120px
+  );
+}
+
+/* Net texture overlay */
+.net-texture {
+  background-image: 
+    linear-gradient(rgba(255,255,255,0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.07) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Goal post border */
+.goalpost {
+  border: 3px solid rgba(255,255,255,0.85);
+  box-shadow: 0 0 20px rgba(255,255,255,0.1), inset 0 0 20px rgba(0,0,0,0.2);
+}
+
+/* Progress bar animation */
+@keyframes progressFill {
+  from { width: 0%; }
+}
+
+.progress-fill {
+  animation: progressFill 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Bounce animation */
+@keyframes ballBounce {
+  0% { transform: translateY(0) rotate(0deg); }
+  30% { transform: translateY(-12px) rotate(120deg); }
+  60% { transform: translateY(-6px) rotate(240deg); }
+  100% { transform: translateY(0) rotate(360deg); }
+}
+
+.ball-bounce {
+  animation: ballBounce 0.8s ease-out;
+}
+
+/* GOAL celebration */
+@keyframes goalCelebration {
+  0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+  50% { transform: scale(1.15) rotate(3deg); opacity: 1; }
+  75% { transform: scale(0.95) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.goal-celebrate {
+  animation: goalCelebration 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Confetti burst */
+@keyframes confettiBurst {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(-80px) rotate(720deg); opacity: 0; }
+}
+
+/* Slide up */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-up {
+  animation: slideUp 0.4s ease-out forwards;
+}
+
+/* Scoreboard flicker */
+@keyframes flicker {
+  0%, 95%, 100% { opacity: 1; }
+  97% { opacity: 0.85; }
+}
+
+.scoreboard {
+  animation: flicker 4s ease-in-out infinite;
+}
+
+/* Pulse glow for completed goals */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(249,201,35,0.4); }
+  50% { box-shadow: 0 0 24px rgba(249,201,35,0.8), 0 0 40px rgba(249,201,35,0.3); }
+}
+
+.goal-complete {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* Net shake when goal scored */
+@keyframes netShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+
+.net-shake {
+  animation: netShake 0.5s ease-out;
+}
+
+/* Grass texture lines */
+.grass-lines {
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 30px,
+    rgba(0,0,0,0.04) 30px,
+    rgba(0,0,0,0.04) 60px
+  );
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 3px;
+}
+
+/* Input styles */
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+input[type="text"]::placeholder,
+input[type="number"]::placeholder,
+textarea::placeholder {
+  color: rgba(255,255,255,0.4);
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: rgba(249,201,35,0.7);
+  background: rgba(255,255,255,0.15);
+}
+
+select option {
+  background: #1a6b2f;
+  color: white;
+}

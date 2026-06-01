@@ -236,17 +236,20 @@ export default function PlayerCard({
               if (goal.type === 'consistency') return <ConsistencyDisplay key={goal.id} goal={goal} {...props}/>;
             })
           }
-          {player.goals.length < 2 && (
-            <button onClick={() => onAddGoal(player)}
-              className="w-full py-2 rounded-xl text-xs font-semibold text-white/50 hover:text-white transition-colors"
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px dashed rgba(255,255,255,0.15)' }}>
-              + Add goal
+          <>
+            {player.goals.length < 2 && (
+              <button onClick={() => onAddGoal(player)}
+                className="w-full py-2 rounded-xl text-xs font-semibold text-white/50 hover:text-white transition-colors"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px dashed rgba(255,255,255,0.15)' }}>
+                + Add goal
+              </button>
+            )}
+            <button onClick={() => { if (window.confirm(`Remove ${player.name} from the team?`)) onDeletePlayer(player); }}
+              className="w-full py-2 rounded-xl text-xs font-semibold text-red-400/60 hover:text-red-400 transition-colors"
+              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              🗑 Remove player
             </button>
-          <button onClick={() => { if (window.confirm(`Remove ${player.name} from the team?`)) onDeletePlayer(player); }}
-            className="w-full py-2 rounded-xl text-xs font-semibold text-red-400/60 hover:text-red-400 transition-colors"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-            🗑 Remove player
-          </button>
+          </>
           )}
         </div>
       )}

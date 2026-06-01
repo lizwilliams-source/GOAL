@@ -45,7 +45,8 @@ export default function Home() {
     setCheckIn(null);
     const updatedPlayer = newData.players.find(p => p.id === player.id)!;
     if (getPlayerOverall(updatedPlayer) >= 100 && prevOverall < 100) {
-      setCelebrating(true); setTimeout(() => setCelebrating(false), 3000);
+      setCelebrating(true);
+      setTimeout(() => setCelebrating(false), 3000);
     }
   };
 
@@ -89,13 +90,15 @@ export default function Home() {
                 <SoccerBall size={34}/>
                 <div>
                   <h1 className="text-2xl text-yellow-400 leading-none tracking-widest" style={{ fontFamily:'Black Han Sans', textShadow:'0 1px 10px rgba(249,201,35,0.35)' }}>GOOOOOOOOOOOOOOOOOOAL</h1>
-                  <p className="text-white/35 text-[10px] tracking-wider uppercase mt-0.5">{data.teamName} · {data.month}</p>
+                  <p className="text-white/35 text-[10px] tracking-wider uppercase mt-0.5">
+                    {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
+                  </p>
                 </div>
               </div>
               <button onClick={() => setShowOnboarding(true)}
-                className="text-xs px-3 py-1.5 rounded-lg font-semibold text-white/60 hover:text-white transition-all hover:scale-105"
-                style={{ background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.12)' }}>
-                + Join
+                className="text-xs px-3 py-1.5 rounded-lg font-bold hover:scale-105 transition-all"
+                style={{ background:'#f9c923', color:'#1a1a1a' }}>
+                + Add Player
               </button>
             </div>
             <div className="grid grid-cols-3 gap-2 rounded-xl p-3" style={{ background:'rgba(0,0,0,0.5)', border:'1px solid rgba(249,201,35,0.15)' }}>
@@ -123,16 +126,15 @@ export default function Home() {
             <div className="text-center py-16 rounded-2xl" style={{ background:'rgba(0,0,0,0.25)', border:'2px dashed rgba(255,255,255,0.1)' }}>
               <div className="text-6xl mb-3">⚽</div>
               <div className="text-xl font-black text-white/60 mb-1" style={{ fontFamily:'Oswald' }}>No players yet</div>
-              <p className="text-white/30 text-sm mb-6 max-w-xs mx-auto">Be first. Pick your animal, set your goals, get on the pitch.</p>
+              <p className="text-white/30 text-sm mb-6 max-w-xs mx-auto">Add your team and set everyone's goals.</p>
               <button onClick={() => setShowOnboarding(true)}
                 className="px-8 py-3 rounded-xl font-black text-sm hover:scale-105 transition-transform"
                 style={{ background:'#f9c923', color:'#1a1a1a', fontFamily:'Oswald', letterSpacing:'0.05em' }}>
-                ⚽ JOIN THE TEAM
+                ⚽ ADD FIRST PLAYER
               </button>
             </div>
           ) : (
             <>
-              {/* Leaderboard strip */}
               {data.players.length > 1 && (
                 <div className="flex gap-2 overflow-x-auto pb-2 mb-5">
                   {[...data.players].sort((a,b) => getPlayerOverall(b)-getPlayerOverall(a)).map((p,i) => {
@@ -152,7 +154,6 @@ export default function Home() {
                   })}
                 </div>
               )}
-
               <div className="space-y-3">
                 {data.players.map(player => (
                   <PlayerCard key={player.id} player={player}
@@ -162,7 +163,6 @@ export default function Home() {
                     onToggle={() => setExpandedId(expandedId===player.id?null:player.id)}/>
                 ))}
               </div>
-
               <div className="mt-5 text-center">
                 <button onClick={() => setShowOnboarding(true)}
                   className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all hover:scale-105"

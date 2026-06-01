@@ -9,6 +9,7 @@ interface Props {
   onDeleteGoal: (player: Player, goalId: string) => void;
   expanded?: boolean;
   onToggle?: () => void;
+  onAddGoal: (player: Player) => void;
 }
 
 function Bar({ pct, color }: { pct: number; color?: string }) {
@@ -195,7 +196,7 @@ function ConsistencyDisplay({ goal, onLog, onDelete }: { goal: ConsistencyGoal; 
   );
 }
 
-export default function PlayerCard({ player, onCheckIn, onDeleteGoal, expanded = false, onToggle }: Props) {
+export default function PlayerCard({ player, onCheckIn, onDeleteGoal, onAddGoal, expanded = false, onToggle, isMe = false }: Props) {
   const overall = getPlayerOverall(player);
   const complete = overall >= 100;
 
@@ -230,6 +231,13 @@ export default function PlayerCard({ player, onCheckIn, onDeleteGoal, expanded =
               if (goal.type === 'consistency') return <ConsistencyDisplay key={goal.id} goal={goal} {...props}/>;
             })
           }
+          {player.goals.length < 2 && (
+            <button onClick={() => onAddGoal(player)}
+              className="w-full py-2 rounded-xl text-xs font-semibold text-white/50 hover:text-white transition-colors"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px dashed rgba(255,255,255,0.15)' }}>
+              + Add goal
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { AppData, Player, Goal } from '../types';
-import { load, save, addPlayer, deleteGoal, logRate, logHabit, logConsistency, getPlayerOverall, addGoalToPlayer } from '../lib/storage';
+import { load, save, addPlayer, deleteGoal, logRate, logHabit, logConsistency, getPlayerOverall, addGoalToPlayer, removePlayer } from '../lib/storage';
 import OnboardingFlow from '../components/OnboardingFlow';
 import PlayerCard from '../components/PlayerCard';
 import CheckInModal from '../components/CheckInModal';
@@ -162,6 +162,7 @@ export default function Home() {
                     onCheckIn={(p,g) => setCheckIn({ player:p, goal:g })}
                     onAddGoal={(p) => setAddGoalPlayer(p)}
                     onDeleteGoal={(p,gid) => persist(deleteGoal(data,p.id,gid))}
+                    onDeletePlayer={(p) => persist(removePlayer(data, p.id))}
                     expanded={expandedId===player.id}
                     onToggle={() => setExpandedId(expandedId===player.id?null:player.id)}/>
                 ))}

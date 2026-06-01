@@ -30,10 +30,14 @@ export default function AddGoalModal({ player, onAdd, onClose }: Props) {
 
   const submit = () => {
     if (!title.trim()) return;
-    const base = { title: title.trim(), description: desc.trim(), emoji };
-    if (type === 'rate')             onAdd({ ...base, type: 'rate', unit, startValue: parseFloat(startVal)||0, targetValue: parseFloat(targetVal)||100, logs: [] });
-    else if (type === 'consistency') onAdd({ ...base, type: 'consistency', targetRate: parseInt(targetRate)||80, logs: [] });
-    else                             onAdd({ ...base, type: 'habit', logs: [] });
+    const base = { title: title.trim(), description: desc.trim(), emoji, logs: [] as never[] };
+    if (type === 'rate') {
+      onAdd({ ...base, type: 'rate' as const, unit, startValue: parseFloat(startVal)||0, targetValue: parseFloat(targetVal)||100 });
+    } else if (type === 'consistency') {
+      onAdd({ ...base, type: 'consistency' as const, targetRate: parseInt(targetRate)||80 });
+    } else {
+      onAdd({ ...base, type: 'habit' as const });
+    }
   };
 
   return (

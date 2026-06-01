@@ -4,7 +4,7 @@ import AnimalAvatarImg from './AnimalAvatar';
 
 interface Props {
   player: Player;
-  onAdd: (goal: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onAdd: (goal: any) => void;
   onClose: () => void;
 }
 

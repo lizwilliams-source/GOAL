@@ -31,6 +31,10 @@ export function updatePlayer(data: AppData, id: string, updates: Partial<Player>
   return { ...data, players: data.players.map(p => p.id === id ? { ...p, ...updates } : p) };
 }
 
+export function removePlayer(data: AppData, playerId: string): AppData {
+  return { ...data, players: data.players.filter(p => p.id !== playerId) };
+}
+
 export function addGoalToPlayer(data: AppData, playerId: string, goal: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>): AppData {
   const player = data.players.find(p => p.id === playerId);
   if (!player || player.goals.length >= 2) return data;

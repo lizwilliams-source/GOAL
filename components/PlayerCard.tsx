@@ -254,7 +254,7 @@ export default function PlayerCard({
       <button onClick={onToggle} className="w-full flex items-center gap-3 p-4 text-left hover:bg-white/5 transition-colors relative z-10">
         <div className="relative flex-shrink-0">
           <AnimalAvatarImg animal={player.avatar} size={62}/>
-          {complete && <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center text-[10px] font-black text-green-900">⚽</div>}
+          {(complete || allCumulativeOnPace) && <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black text-green-900" style={{ background: complete ? '#f9c923' : '#4ade80' }}>⚽</div>}
         </div>
         <div className="flex-1 min-w-0">
           <div className="font-black text-white text-base leading-tight" style={{ fontFamily: 'Oswald' }}>{player.name}</div>

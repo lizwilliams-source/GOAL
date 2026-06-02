@@ -129,7 +129,7 @@ export default function Home() {
           </div>
         </header>
 
-        <main className="max-w-2xl mx-auto px-4 py-6">
+        <main className="max-w-2xl mx-auto px-4 py-6 pb-24 sm:pb-6">
           {data.players.length === 0 ? (
             <div className="text-center py-16 rounded-2xl" style={{ background:'rgba(0,0,0,0.25)', border:'2px dashed rgba(255,255,255,0.1)' }}>
               <div className="text-6xl mb-3">⚽</div>
@@ -191,8 +191,8 @@ export default function Home() {
         </main>
 
         <button onClick={() => setShowOnboarding(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl hover:scale-110 transition-transform sm:hidden z-30"
-          style={{ background:'#f9c923', boxShadow:'0 4px 20px rgba(249,201,35,0.4)' }}>
+          className="fixed right-6 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl active:scale-95 transition-transform sm:hidden z-30"
+          style={{ bottom: 'max(24px, env(safe-area-inset-bottom, 24px))', background:'#f9c923', boxShadow:'0 4px 20px rgba(249,201,35,0.4)' }}>
           ⚽
         </button>
       </div>

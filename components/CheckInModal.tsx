@@ -103,7 +103,7 @@ function CalendarPicker({ goal, selected, onChange }: { goal: Goal; selected: st
             <button key={ds} onClick={() => !isFuture && onChange(ds)} disabled={isFuture}
               className="flex items-center justify-center rounded-md text-[11px] font-bold transition-all disabled:opacity-20"
               style={{
-                aspectRatio: '1', minHeight: '28px',
+                height: '40px', width: '100%',
                 background: bg || 'rgba(255,255,255,0.04)',
                 color: isSelected ? '#1a1a1a' : status !== 'empty' ? 'white' : isToday ? '#f9c923' : 'rgba(255,255,255,0.45)',
                 border: isToday && !isSelected ? '1px solid rgba(249,201,35,0.4)' : '1px solid transparent',
@@ -325,7 +325,7 @@ export default function CheckInModal({ player, goal, onSubmitRate, onSubmitHabit
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center modal-backdrop" onClick={onClose}>
       <div className="relative rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl slide-up overflow-y-auto"
-        style={{ background: '#0d3b11', border: '2px solid rgba(249,201,35,0.3)', maxHeight: '90vh' }}
+        style={{ background: '#0d3b11', border: '2px solid rgba(249,201,35,0.3)', maxHeight: 'min(90vh, 90svh)' }}
         onClick={e => e.stopPropagation()}>
         <div className="absolute top-0 left-4 right-4 h-1 rounded-b-sm bg-white/20"/>
         <div className="absolute top-0 left-4 w-1 h-6 rounded-b-sm bg-white/20"/>

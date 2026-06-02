@@ -44,8 +44,8 @@ function RateDisplay({ goal, onLog, onDelete }: { goal: RateGoal; onLog: () => v
           <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider" style={{ background: 'rgba(96,165,250,0.12)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.2)' }}>📈 Rate</span>
         </div>
         <div className="flex gap-1 flex-shrink-0">
-          <button onClick={onLog} className="text-[10px] px-2 py-1 rounded font-bold hover:scale-105 transition-transform" style={{ background: '#f9c923', color: '#1a1a1a' }}>+ Log</button>
-          <button onClick={onDelete} className="text-[10px] px-2 py-1 rounded text-white/30 hover:text-red-400 transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}>✕</button>
+          <button onClick={onLog} className="text-xs px-3 py-2 rounded-lg font-bold active:scale-95 transition-transform" style={{ background: '#f9c923', color: '#1a1a1a' }}>+ Log</button>
+          <button onClick={onDelete} className="text-sm w-9 h-9 flex items-center justify-center rounded-lg text-white/30 hover:text-red-400 active:text-red-400 transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}>✕</button>
         </div>
       </div>
       {/* Current value + delta */}
@@ -104,8 +104,8 @@ function HabitDisplay({ goal, onLog, onDelete }: { goal: HabitGoal; onLog: () =>
           <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider" style={{ background: 'rgba(74,222,128,0.1)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.2)' }}>✅ Habit</span>
         </div>
         <div className="flex gap-1 flex-shrink-0">
-          <button onClick={onLog} className="text-[10px] px-2 py-1 rounded font-bold hover:scale-105 transition-transform" style={{ background: '#f9c923', color: '#1a1a1a' }}>+ Log</button>
-          <button onClick={onDelete} className="text-[10px] px-2 py-1 rounded text-white/30 hover:text-red-400 transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}>✕</button>
+          <button onClick={onLog} className="text-xs px-3 py-2 rounded-lg font-bold active:scale-95 transition-transform" style={{ background: '#f9c923', color: '#1a1a1a' }}>+ Log</button>
+          <button onClick={onDelete} className="text-sm w-9 h-9 flex items-center justify-center rounded-lg text-white/30 hover:text-red-400 active:text-red-400 transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}>✕</button>
         </div>
       </div>
       {/* 7-day dots */}
@@ -149,8 +149,8 @@ function CumulativeDisplay({ goal, onLog, onDelete }: { goal: CumulativeGoal; on
           <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider" style={{ background: 'rgba(167,139,250,0.1)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.2)' }}>🔢 Cumulative</span>
         </div>
         <div className="flex gap-1 flex-shrink-0">
-          <button onClick={onLog} className="text-[10px] px-2 py-1 rounded font-bold hover:scale-105 transition-transform" style={{ background: '#f9c923', color: '#1a1a1a' }}>+ Log</button>
-          <button onClick={onDelete} className="text-[10px] px-2 py-1 rounded text-white/30 hover:text-red-400 transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}>✕</button>
+          <button onClick={onLog} className="text-xs px-3 py-2 rounded-lg font-bold active:scale-95 transition-transform" style={{ background: '#f9c923', color: '#1a1a1a' }}>+ Log</button>
+          <button onClick={onDelete} className="text-sm w-9 h-9 flex items-center justify-center rounded-lg text-white/30 hover:text-red-400 active:text-red-400 transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}>✕</button>
         </div>
       </div>
       <div className="flex items-baseline gap-2 mb-2">
@@ -184,8 +184,8 @@ function ConsistencyDisplay({ goal, onLog, onDelete }: { goal: ConsistencyGoal; 
           <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider" style={{ background: 'rgba(251,146,60,0.1)', color: '#fb923c', border: '1px solid rgba(251,146,60,0.2)' }}>🎯 Consistency</span>
         </div>
         <div className="flex gap-1 flex-shrink-0">
-          <button onClick={onLog} className="text-[10px] px-2 py-1 rounded font-bold hover:scale-105 transition-transform" style={{ background: '#f9c923', color: '#1a1a1a' }}>+ Log</button>
-          <button onClick={onDelete} className="text-[10px] px-2 py-1 rounded text-white/30 hover:text-red-400 transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}>✕</button>
+          <button onClick={onLog} className="text-xs px-3 py-2 rounded-lg font-bold active:scale-95 transition-transform" style={{ background: '#f9c923', color: '#1a1a1a' }}>+ Log</button>
+          <button onClick={onDelete} className="text-sm w-9 h-9 flex items-center justify-center rounded-lg text-white/30 hover:text-red-400 active:text-red-400 transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}>✕</button>
         </div>
       </div>
       {/* Big rate */}

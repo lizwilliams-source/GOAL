@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { Goal, RateGoal, HabitGoal, ConsistencyGoal, CumulativeGoal, Player } from '../types';
-import { getRateProgress, getHabitProgress, getConsistencyProgress, getCumulativeProgress } from '../lib/storage';
+import { getRateProgress, getConsistencyProgress, getCumulativeProgress } from '../lib/storage';
 import AnimalAvatarImg from './AnimalAvatar';
 
 interface Props {
   player: Player;
   goal: Goal;
-  onSubmitRate: (value: number, note?: string) => void;
-  onSubmitHabit: (completed: boolean, note?: string) => void;
-  onSubmitConsistency: (handled: number, total: number, note?: string) => void;
-  onSubmitCumulative: (amount: number, note?: string) => void;
+  onSubmitRate: (value: number, note?: string, date?: string) => void;
+  onSubmitHabit: (completed: boolean, note?: string, date?: string) => void;
+  onSubmitConsistency: (handled: number, total: number, note?: string, date?: string) => void;
+  onSubmitCumulative: (amount: number, note?: string, date?: string) => void;
   onClose: () => void;
 }
 
@@ -25,12 +25,39 @@ function Celebrating({ onDone }: { onDone: () => void }) {
   );
 }
 
+function DatePicker({ selected, onChange }: { selected: string; onChange: (d: string) => void }) {
+  const todayStr = new Date().toISOString().split('T')[0];
+  const days = Array.from({ length: 4 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (3 - i));
+    return d.toISOString().split('T')[0];
+  });
+  return (
+    <div className="flex gap-1 mb-4">
+      {days.map(ds => {
+        const diff = Math.round((new Date(todayStr).getTime() - new Date(ds).getTime()) / 86400000);
+        const label = diff === 0 ? 'Today' : diff === 1 ? 'Yesterday' : new Date(ds + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' });
+        return (
+          <button key={ds} onClick={() => onChange(ds)}
+            className="flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all"
+            style={{
+              background: selected === ds ? 'rgba(249,201,35,0.2)' : 'rgba(255,255,255,0.06)',
+              border: `1.5px solid ${selected === ds ? 'rgba(249,201,35,0.5)' : 'rgba(255,255,255,0.08)'}`,
+              color: selected === ds ? '#f9c923' : 'rgba(255,255,255,0.4)',
+            }}>
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ---- RATE check-in ----
 function RateCheckIn({ goal, onSubmit }: { goal: RateGoal; onSubmit: (v: number, n?: string) => void }) {
   const [value, setValue] = useState('');
   const [note, setNote] = useState('');
   const { current, delta, progressPct, history } = getRateProgress(goal);
-
   const miniHistory = history.slice(-6);
   const allVals = [goal.startValue, goal.targetValue, ...miniHistory.map(h => h.value)];
   const minV = Math.min(...allVals);
@@ -39,7 +66,6 @@ function RateCheckIn({ goal, onSubmit }: { goal: RateGoal; onSubmit: (v: number,
 
   return (
     <div>
-      {/* Sparkline + current */}
       <div className="mb-4 p-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.3)' }}>
         <div className="flex items-baseline gap-2 mb-1">
           <span className="text-2xl font-black" style={{ fontFamily: 'Black Han Sans', color: '#60a5fa' }}>
@@ -55,17 +81,15 @@ function RateCheckIn({ goal, onSubmit }: { goal: RateGoal; onSubmit: (v: number,
           <span>Start: {goal.startValue}{goal.unit}</span>
           <span>Target: {goal.targetValue}{goal.unit}</span>
         </div>
-        {/* Mini sparkline */}
         {miniHistory.length > 1 && (
-          <svg width="100%" height="32" viewBox={`0 0 200 32`} preserveAspectRatio="none">
+          <svg width="100%" height="32" viewBox="0 0 200 32" preserveAspectRatio="none">
             <polyline
               points={miniHistory.map((h, i) => {
                 const x = (i / (miniHistory.length - 1)) * 190 + 5;
                 const y = 28 - ((h.value - minV) / range) * 24;
                 return `${x},${y}`;
               }).join(' ')}
-              fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            />
+              fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             {miniHistory.map((h, i) => {
               const x = (i / (miniHistory.length - 1)) * 190 + 5;
               const y = 28 - ((h.value - minV) / range) * 24;
@@ -73,12 +97,11 @@ function RateCheckIn({ goal, onSubmit }: { goal: RateGoal; onSubmit: (v: number,
             })}
           </svg>
         )}
-        {/* Progress bar */}
         <div className="h-1.5 rounded-full overflow-hidden mt-1" style={{ background: 'rgba(0,0,0,0.4)' }}>
           <div className="h-full rounded-full transition-all duration-700" style={{ width: `${progressPct}%`, background: progressPct >= 100 ? '#f9c923' : '#60a5fa' }}/>
         </div>
       </div>
-      <label className="text-xs text-white/50 uppercase tracking-wider mb-2 block">Log today's {goal.unit ? `${goal.unit} ` : ''}value</label>
+      <label className="text-xs text-white/50 uppercase tracking-wider mb-2 block">Log {goal.unit ? `${goal.unit} ` : ''}value</label>
       <input type="number" step="any" placeholder={`e.g. ${goal.targetValue}`} value={value}
         onChange={e => setValue(e.target.value)} className="w-full mb-3" autoFocus/>
       <textarea placeholder="Note (optional)" value={note} onChange={e => setNote(e.target.value)} className="w-full resize-none mb-4" rows={2}/>
@@ -93,10 +116,17 @@ function RateCheckIn({ goal, onSubmit }: { goal: RateGoal; onSubmit: (v: number,
 }
 
 // ---- HABIT check-in ----
-function HabitCheckIn({ goal, onSubmit }: { goal: HabitGoal; onSubmit: (c: boolean, n?: string) => void }) {
+function HabitCheckIn({ goal, date, onSubmit }: { goal: HabitGoal; date: string; onSubmit: (c: boolean, n?: string) => void }) {
   const [completed, setCompleted] = useState(true);
   const [note, setNote] = useState('');
-  const { doneDays, totalDays, pct, todayLogged, todayCompleted } = getHabitProgress(goal);
+  const doneDays = goal.logs.filter(l => l.completed).length;
+  const totalDays = goal.logs.length;
+  const pct = totalDays === 0 ? 0 : Math.round((doneDays / totalDays) * 100);
+  const dateEntry = goal.logs.find(l => l.date === date);
+  const dateLogged = !!dateEntry;
+  const dateCompleted = dateEntry?.completed ?? null;
+  const today = new Date().toISOString().split('T')[0];
+  const dateLabel = date === today ? 'Today' : 'This day';
 
   return (
     <div>
@@ -109,12 +139,12 @@ function HabitCheckIn({ goal, onSubmit }: { goal: HabitGoal; onSubmit: (c: boole
           <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.4)' }}>
             <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: pct >= 80 ? '#4ade80' : '#60a5fa' }}/>
           </div>
-          {todayLogged && (
-            <div className="mt-2 text-xs text-white/40">Today already logged: {todayCompleted ? '✅ Yes' : '❌ No'} — tap to update</div>
+          {dateLogged && (
+            <div className="mt-2 text-xs text-white/40">{dateLabel} already logged: {dateCompleted ? '✅ Yes' : '❌ No'} — tap to update</div>
           )}
         </div>
       )}
-      <label className="text-xs text-white/50 uppercase tracking-wider mb-3 block">Did you do it today?</label>
+      <label className="text-xs text-white/50 uppercase tracking-wider mb-3 block">Did you do it?</label>
       <div className="grid grid-cols-2 gap-3 mb-4">
         <button onClick={() => setCompleted(true)}
           className="py-6 rounded-2xl font-black transition-all duration-150"
@@ -160,7 +190,7 @@ function CumulativeCheckIn({ goal, onSubmit }: { goal: CumulativeGoal; onSubmit:
         </div>
       )}
       <label className="text-xs text-white/50 uppercase tracking-wider mb-2 block">Log {goal.unit}</label>
-      <input type="number" step="any" min="0" placeholder={`e.g. 1`} value={amount}
+      <input type="number" step="any" min="0" placeholder="e.g. 1" value={amount}
         onChange={e => setAmount(e.target.value)} className="w-full mb-3" autoFocus/>
       <textarea placeholder="Note (optional)" value={note} onChange={e => setNote(e.target.value)} className="w-full resize-none mb-4" rows={2}/>
       <button onClick={() => { if (amount) onSubmit(parseFloat(amount), note || undefined); }}
@@ -178,15 +208,13 @@ function ConsistencyCheckIn({ goal, onSubmit }: { goal: ConsistencyGoal; onSubmi
   const [handled, setHandled] = useState('');
   const [total, setTotal] = useState('');
   const [note, setNote] = useState('');
-  const { totalHandled, totalInstances, rate, progressPct, recentLogs } = getConsistencyProgress(goal);
-
+  const { totalHandled, totalInstances, rate, recentLogs } = getConsistencyProgress(goal);
   const h = parseInt(handled) || 0;
   const t = parseInt(total) || 0;
   const sessionRate = t > 0 ? Math.round((h / t) * 100) : null;
 
   return (
     <div>
-      {/* Running total */}
       {totalInstances > 0 && (
         <div className="mb-4 p-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.3)' }}>
           <div className="flex items-baseline justify-between mb-1">
@@ -196,7 +224,6 @@ function ConsistencyCheckIn({ goal, onSubmit }: { goal: ConsistencyGoal; onSubmi
             </div>
             <span className="text-xs text-white/40">{totalHandled}/{totalInstances} total</span>
           </div>
-          {/* Split bar */}
           <div className="flex h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.4)' }}>
             <div className="h-full rounded-l-full transition-all duration-700" style={{ width: `${rate}%`, background: rate >= goal.targetRate ? '#f9c923' : '#4ade80' }}/>
             <div className="h-full flex-1 rounded-r-full" style={{ background: 'rgba(220,38,38,0.4)' }}/>
@@ -206,7 +233,6 @@ function ConsistencyCheckIn({ goal, onSubmit }: { goal: ConsistencyGoal; onSubmi
             <span>Target: {goal.targetRate}%</span>
             <span>❌ {totalInstances - totalHandled} missed</span>
           </div>
-          {/* Recent logs */}
           {recentLogs.length > 0 && (
             <div className="mt-2 space-y-0.5 border-t border-white/8 pt-2">
               {recentLogs.map((l, i) => (
@@ -216,17 +242,14 @@ function ConsistencyCheckIn({ goal, onSubmit }: { goal: ConsistencyGoal; onSubmi
                   <span style={{ color: Math.round((l.handled/l.total)*100) >= goal.targetRate ? '#4ade80' : '#f87171' }}>
                     {Math.round((l.handled / l.total) * 100)}%
                   </span>
-                  {l.note && <span className="truncate">"{l.note}"</span>}
+                  {l.note && <span className="truncate">&quot;{l.note}&quot;</span>}
                 </div>
               ))}
             </div>
           )}
         </div>
       )}
-
-      <label className="text-xs text-white/50 uppercase tracking-wider mb-3 block">
-        Log this session
-      </label>
+      <label className="text-xs text-white/50 uppercase tracking-wider mb-3 block">Log this session</label>
       <div className="grid grid-cols-2 gap-3 mb-2">
         <div>
           <div className="text-xs text-white/40 mb-1.5">Handled well ✅</div>
@@ -260,9 +283,7 @@ function ConsistencyCheckIn({ goal, onSubmit }: { goal: ConsistencyGoal; onSubmi
 
 export default function CheckInModal({ player, goal, onSubmitRate, onSubmitHabit, onSubmitConsistency, onSubmitCumulative, onClose }: Props) {
   const [done, setDone] = useState(false);
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const wrap = (fn: (...args: any[]) => void) => (...args: any[]) => { fn(...args); setDone(true); };
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center modal-backdrop" onClick={onClose}>
@@ -275,7 +296,7 @@ export default function CheckInModal({ player, goal, onSubmitRate, onSubmitHabit
 
         {done && <Celebrating onDone={onClose}/>}
 
-        <div className="flex items-center gap-3 mb-5">
+        <div className="flex items-center gap-3 mb-4">
           <AnimalAvatarImg animal={player.avatar} size={44}/>
           <div>
             <div className="font-black text-white text-sm" style={{ fontFamily: 'Oswald' }}>{player.name}</div>
@@ -284,17 +305,19 @@ export default function CheckInModal({ player, goal, onSubmitRate, onSubmitHabit
           <button onClick={onClose} className="ml-auto text-white/30 hover:text-white text-xl p-1">✕</button>
         </div>
 
+        <DatePicker selected={selectedDate} onChange={setSelectedDate}/>
+
         {goal.type === 'rate' && (
-          <RateCheckIn goal={goal} onSubmit={wrap((v?: number, n?: string) => onSubmitRate(v!, n))}/>
+          <RateCheckIn goal={goal} onSubmit={(v, n) => { onSubmitRate(v, n, selectedDate); setDone(true); }}/>
         )}
         {goal.type === 'habit' && (
-          <HabitCheckIn goal={goal} onSubmit={wrap((c: boolean, n?: string) => onSubmitHabit(c, n))}/>
+          <HabitCheckIn goal={goal} date={selectedDate} onSubmit={(c, n) => { onSubmitHabit(c, n, selectedDate); setDone(true); }}/>
         )}
         {goal.type === 'consistency' && (
-          <ConsistencyCheckIn goal={goal} onSubmit={wrap((h: number, t: number, n?: string) => onSubmitConsistency(h, t, n))}/>
+          <ConsistencyCheckIn goal={goal} onSubmit={(h, t, n) => { onSubmitConsistency(h, t, n, selectedDate); setDone(true); }}/>
         )}
         {goal.type === 'cumulative' && (
-          <CumulativeCheckIn goal={goal} onSubmit={wrap((a: number, n?: string) => onSubmitCumulative(a, n))}/>
+          <CumulativeCheckIn goal={goal} onSubmit={(a, n) => { onSubmitCumulative(a, n, selectedDate); setDone(true); }}/>
         )}
       </div>
     </div>

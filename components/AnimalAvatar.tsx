@@ -8,21 +8,21 @@ interface Props {
 }
 
 export const ANIMAL_NAMES: Record<AnimalKind, string> = {
-  goose:    'Goose',
-  goat:     'Goat',
-  panda:    'Panda',
-  giraffe:  'Giraffe',
-  cat:      'Cat',
-  gorilla:  'Gorilla',
-  sheep:    'Sheep',
-  tiger:    'Tiger',
-  cheetah:  'Cheetah',
-  blackcat: 'Black Cat',
+  duck:    'Duck',
+  goat:    'Goat',
+  panda:   'Panda',
+  giraffe: 'Giraffe',
+  cat:     'Cat',
+  gorilla: 'Gorilla',
+  sheep:   'Sheep',
+  tiger:   'Tiger',
+  cheetah: 'Cheetah',
+  lizard:  'Lizard',
 };
 
 export const ALL_ANIMALS: AnimalKind[] = [
-  'goose','goat','panda','giraffe','cat',
-  'gorilla','sheep','tiger','cheetah','blackcat',
+  'duck','goat','panda','giraffe','cat',
+  'gorilla','sheep','tiger','cheetah','lizard',
 ];
 
 export default function AnimalAvatar({ animal, size = 80, className = '' }: Props) {

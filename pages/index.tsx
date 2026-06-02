@@ -187,10 +187,10 @@ export default function Home() {
       {checkIn && (
         <CheckInModal
           player={checkIn.player} goal={checkIn.goal}
-          onSubmitRate={(v,n) => handleCheckIn(() => sb.logRate(checkIn.goal.id, v, n))}
-          onSubmitHabit={(c,n) => handleCheckIn(() => sb.logHabit(checkIn.goal.id, c, n))}
-          onSubmitConsistency={(h,t,n) => handleCheckIn(() => sb.logConsistency(checkIn.goal.id, h, t, n))}
-          onSubmitCumulative={(a,n) => handleCheckIn(() => sb.logCumulative(checkIn.goal.id, a, n))}
+          onSubmitRate={(v,n,d) => handleCheckIn(() => sb.logRate(checkIn.goal.id, v, n, d))}
+          onSubmitHabit={(c,n,d) => handleCheckIn(() => sb.logHabit(checkIn.goal.id, c, n, d))}
+          onSubmitConsistency={(h,t,n,d) => handleCheckIn(() => sb.logConsistency(checkIn.goal.id, h, t, n, d))}
+          onSubmitCumulative={(a,n,d) => handleCheckIn(() => sb.logCumulative(checkIn.goal.id, a, n, d))}
           onClose={() => setCheckIn(null)}/>
       )}
 

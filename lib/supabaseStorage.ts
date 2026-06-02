@@ -105,26 +105,26 @@ export async function deleteGoal(goalId: string): Promise<void> {
   await getSupabase().from('goals').delete().eq('id', goalId);
 }
 
-export async function logRate(goalId: string, value: number, note?: string): Promise<void> {
-  const today = new Date().toISOString().split('T')[0];
+export async function logRate(goalId: string, value: number, note?: string, date?: string): Promise<void> {
+  const d = date ?? new Date().toISOString().split('T')[0];
   await getSupabase().from('rate_logs')
-    .upsert({ goal_id: goalId, date: today, value, note: note ?? null }, { onConflict: 'goal_id,date' });
+    .upsert({ goal_id: goalId, date: d, value, note: note ?? null }, { onConflict: 'goal_id,date' });
 }
 
-export async function logHabit(goalId: string, completed: boolean, note?: string): Promise<void> {
-  const today = new Date().toISOString().split('T')[0];
+export async function logHabit(goalId: string, completed: boolean, note?: string, date?: string): Promise<void> {
+  const d = date ?? new Date().toISOString().split('T')[0];
   await getSupabase().from('habit_logs')
-    .upsert({ goal_id: goalId, date: today, completed, note: note ?? null }, { onConflict: 'goal_id,date' });
+    .upsert({ goal_id: goalId, date: d, completed, note: note ?? null }, { onConflict: 'goal_id,date' });
 }
 
-export async function logConsistency(goalId: string, handled: number, total: number, note?: string): Promise<void> {
-  const today = new Date().toISOString().split('T')[0];
+export async function logConsistency(goalId: string, handled: number, total: number, note?: string, date?: string): Promise<void> {
+  const d = date ?? new Date().toISOString().split('T')[0];
   await getSupabase().from('consistency_logs')
-    .insert({ goal_id: goalId, date: today, handled, total, note: note ?? null });
+    .insert({ goal_id: goalId, date: d, handled, total, note: note ?? null });
 }
 
-export async function logCumulative(goalId: string, amount: number, note?: string): Promise<void> {
-  const today = new Date().toISOString().split('T')[0];
+export async function logCumulative(goalId: string, amount: number, note?: string, date?: string): Promise<void> {
+  const d = date ?? new Date().toISOString().split('T')[0];
   await getSupabase().from('cumulative_logs')
-    .insert({ goal_id: goalId, date: today, amount, note: note ?? null });
+    .insert({ goal_id: goalId, date: d, amount, note: note ?? null });
 }

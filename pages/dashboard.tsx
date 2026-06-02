@@ -6,6 +6,7 @@ import { loadData, getRecentActivity, ActivityItem } from '../lib/supabaseStorag
 import { getPlayerOverall, getGoalProgress, getHabitStreak } from '../lib/storage';
 import { HabitGoal } from '../types';
 import AnimalAvatarImg from '../components/AnimalAvatar';
+import TabBar from '../components/TabBar';
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
@@ -269,7 +270,7 @@ export default function Dashboard() {
         <title>Squad Dashboard ⚽</title>
         <meta name="viewport" content="width=device-width, initial-scale=1"/>
       </Head>
-      <div className="min-h-screen pitch-bg grass-lines" style={{ paddingBottom: 'env(safe-area-inset-bottom, 24px)' }}>
+      <div className="min-h-screen pitch-bg grass-lines pb-24 md:pb-6">
 
         {/* Header */}
         <div style={{ background:'#071f09', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
@@ -282,7 +283,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-3">
               <GoalPost/>
               <button onClick={() => router.push('/')}
-                className="text-xs px-3 py-1.5 rounded-lg font-bold"
+                className="hidden md:block text-xs px-3 py-1.5 rounded-lg font-bold"
                 style={{ background:'rgba(255,255,255,0.08)', color:'rgba(255,255,255,0.6)' }}>
                 ← Back
               </button>
@@ -309,6 +310,7 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+      <TabBar active="dashboard"/>
     </>
   );
 }

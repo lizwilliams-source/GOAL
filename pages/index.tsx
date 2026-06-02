@@ -11,6 +11,9 @@ import CheckInModal from '../components/CheckInModal';
 import AnimalAvatarImg from '../components/AnimalAvatar';
 import SoccerBall from '../components/SoccerBall';
 import AddGoalModal from '../components/AddGoalModal';
+import TabBar from '../components/TabBar';
+import { ActivityItem } from '../lib/supabaseStorage';
+import { AnimalKind } from '../types';
 
 function goalBarInfo(goal: Goal): { pct: number; color: string; label: string } {
   if (goal.type === 'habit') {
@@ -89,10 +92,14 @@ export default function Home() {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [celebrating, setCelebrating] = useState(false);
   const [addGoalPlayer, setAddGoalPlayer] = useState<Player | null>(null);
+  const [sideActivity, setSideActivity] = useState<ActivityItem[]>([]);
 
   const refresh = async () => { setData(await sb.loadData()); };
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    refresh();
+    sb.getRecentActivity(8).then(setSideActivity);
+  }, []);
 
   const handleOnboardComplete = async (playerData: Omit<Player, 'id' | 'createdAt'>) => {
     const newPlayerId = await sb.createPlayer(playerData);
@@ -233,7 +240,8 @@ export default function Home() {
           </div>
         </header>
 
-        <main className="max-w-2xl mx-auto px-4 py-6 pb-24 sm:pb-6">
+        <main className="max-w-screen-xl mx-auto px-4 py-6 pb-28 md:pb-6 md:flex md:gap-6 md:items-start">
+          <div className="flex-1 min-w-0">
           {notLoggedYesterday.length > 0 && (
             <div className="mb-4 px-3 py-2.5 rounded-xl" style={{ background:'rgba(251,146,60,0.1)', border:'1px solid rgba(251,146,60,0.2)' }}>
               <div className="flex items-center gap-2 flex-wrap">
@@ -280,13 +288,67 @@ export default function Home() {
               </div>
             </>
           )}
-          <div className="mt-10 text-center">
-            <div className="h-px bg-white/8 mb-4"/>
-            <div className="inline-flex items-center gap-2 text-white/15 text-[10px] tracking-widest uppercase">
-              <span>GOOOOOOOOOOOOOOOOOOAL</span>
+          </div>{/* end flex-1 */}
+
+          {/* Desktop sidebar — dashboard + log */}
+          <aside className="hidden md:block w-80 flex-shrink-0 space-y-4">
+            {/* Team ranking */}
+            <div className="rounded-2xl p-4" style={{ background:'rgba(0,0,0,0.35)', border:'1px solid rgba(249,201,35,0.15)' }}>
+              <div className="text-xs font-black text-white/50 uppercase tracking-widest mb-3" style={{ fontFamily:'Oswald' }}>⚽ Standings</div>
+              <div className="space-y-2">
+                {data && [...data.players].sort((a,b) => getPlayerOverall(b)-getPlayerOverall(a)).map((p,i) => {
+                  const score = getPlayerOverall(p);
+                  const cumulativeGoals = p.goals.filter((g): g is CumulativeGoal => g.type === 'cumulative');
+                  const onPace = cumulativeGoals.length > 0 && cumulativeGoals.every(g => getCumulativeProgress(g).onPace);
+                  const color = score >= 100 ? '#f9c923' : onPace ? '#4ade80' : score >= 70 ? '#4ade80' : score >= 40 ? '#60a5fa' : '#a78bfa';
+                  const medals = ['🥇','🥈','🥉'];
+                  return (
+                    <div key={p.id} className="flex items-center gap-2.5">
+                      <span className="text-sm w-5 text-center flex-shrink-0">{medals[i] ?? <span className="text-white/30 text-xs">{i+1}</span>}</span>
+                      <AnimalAvatarImg animal={p.avatar} size={30}/>
+                      <span className="text-xs font-bold text-white/80 flex-1 truncate" style={{ fontFamily:'Oswald' }}>{p.name}</span>
+                      <span className="text-xs font-black flex-shrink-0" style={{ color, fontFamily:'Oswald' }}>{score}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <button onClick={() => router.push('/dashboard')}
+                className="mt-3 w-full py-1.5 rounded-lg text-xs font-bold text-center transition-colors hover:bg-yellow-400/20"
+                style={{ color:'rgba(249,201,35,0.6)', border:'1px solid rgba(249,201,35,0.15)' }}>
+                Full dashboard →
+              </button>
             </div>
-          </div>
+            {/* Recent activity */}
+            <div className="rounded-2xl p-4" style={{ background:'rgba(0,0,0,0.35)', border:'1px solid rgba(255,255,255,0.08)' }}>
+              <div className="text-xs font-black text-white/50 uppercase tracking-widest mb-3" style={{ fontFamily:'Oswald' }}>⚡ Recent</div>
+              {sideActivity.length === 0 ? (
+                <div className="text-xs text-white/25 text-center py-3">No activity yet</div>
+              ) : (
+                <div className="space-y-2">
+                  {sideActivity.map((item, i) => {
+                    const colors: Record<string, string> = { habit:'#4ade80', consistency:'#fb923c', rate:'#60a5fa', cumulative:'#a78bfa' };
+                    const color = colors[item.goalType] ?? '#f9c923';
+                    return (
+                      <div key={item.id ?? i} className="flex items-center gap-2">
+                        <AnimalAvatarImg animal={item.playerAvatar as AnimalKind} size={26}/>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[10px] font-bold text-white/70 truncate" style={{ fontFamily:'Oswald' }}>{item.playerName}</div>
+                          <div className="text-[9px] truncate" style={{ color }}>{item.goalEmoji} {item.summary}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <button onClick={() => router.push('/log')}
+                    className="mt-1 w-full py-1.5 rounded-lg text-xs font-bold text-center"
+                    style={{ color:'rgba(255,255,255,0.3)', border:'1px solid rgba(255,255,255,0.08)' }}>
+                    See all →
+                  </button>
+                </div>
+              )}
+            </div>
+          </aside>
         </main>
+        <TabBar active="home"/>
 
       </div>
 

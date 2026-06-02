@@ -10,29 +10,32 @@ interface Props {
 
 type Step = 'avatar' | 'name' | 'goals';
 
-type GoalType = 'rate' | 'habit' | 'consistency';
+type GoalType = 'rate' | 'habit' | 'consistency' | 'cumulative';
 
 const TYPE_INFO: Record<GoalType, { color: string; label: string; desc: string }> = {
   rate:        { color: '#60a5fa', label: '📈 Rate tracker',  desc: 'Log a number over time, see the delta' },
   habit:       { color: '#4ade80', label: '✅ Daily habit',    desc: 'Yes/no each day, track % completion' },
   consistency: { color: '#fb923c', label: '🎯 Consistency',    desc: 'X out of Y instances — hit rate' },
+  cumulative:  { color: '#a78bfa', label: '🔢 Cumulative',     desc: 'Add up totals, track pace vs 21-day month' },
 };
 
 const TEMPLATES = [
-  { type: 'consistency' as GoalType, title: 'Handle pricing objection', description: 'Navigate "how much does it cost" without giving price', emoji: '💬', targetRate: 85 },
+  { type: 'consistency' as GoalType, title: 'Handle pricing objection better', description: 'Navigate "how much does it cost" without giving price', emoji: '💬', targetRate: 85 },
   { type: 'consistency' as GoalType, title: 'Mention setup fee on every demo', description: 'Log how many demos you brought up the setup fee on', emoji: '📋', targetRate: 100 },
-  { type: 'rate'        as GoalType, title: 'Improve close rate',        description: 'Track close rate over the month', emoji: '📈', unit: '%', startValue: 30, targetValue: 40 },
-  { type: 'habit'       as GoalType, title: 'Hit 200 WIN daily',         description: '200+ Work Effort metric every working day', emoji: '💼' },
-  { type: 'habit'       as GoalType, title: 'Follow up same day',        description: 'Follow up on new leads the same day', emoji: '⚡' },
-  { type: 'rate'        as GoalType, title: 'Increase avg deal size',    description: 'Track average deal size over the month', emoji: '💰', unit: 'k', startValue: 10, targetValue: 15 },
+  { type: 'rate'        as GoalType, title: 'Improve close rate from 33% to 40%', description: 'Track close rate over the month', emoji: '📈', unit: '%', startValue: 30, targetValue: 40 },
+  { type: 'habit'       as GoalType, title: 'Hit 200 WIN daily', description: '200+ Work Effort metric every working day', emoji: '💼' },
+  { type: 'habit'       as GoalType, title: 'Source 25 fresh leads every day', description: 'Self-prospect 25 leads every dat', emoji: '⚡' },
+  { type: 'cumulative'  as GoalType, title: 'Set 40 Demos this month', description: 'Set 40 qualified demos this month', emoji: '📞', targetTotal: 40, unit: 'Sets' },
+  { type: 'cumulative'  as GoalType, title: 'Hold 10 Demos this month', description: 'Hold a demo every other day', emoji: '📅', targetTotal: 10, unit: 'Holds' },
 ];
 
 const EMOJIS = ['🎯','💼','📈','💬','📋','⚡','🔥','💪','🏆','📞','🤝','💰','🚀','⭐','🎪'];
 
 function mkGoal(tmpl: typeof TEMPLATES[0]): Goal {
   const base = { id: uuidv4(), title: tmpl.title, description: tmpl.description, emoji: tmpl.emoji, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-  if (tmpl.type === 'consistency') return { ...base, type: 'consistency', targetRate: tmpl.targetRate ?? 80, logs: [] };
-  if (tmpl.type === 'rate')        return { ...base, type: 'rate', unit: tmpl.unit ?? '%', startValue: tmpl.startValue ?? 0, targetValue: tmpl.targetValue ?? 100, logs: [] };
+  if (tmpl.type === 'consistency') return { ...base, type: 'consistency', targetRate: (tmpl as any).targetRate ?? 80, logs: [] };
+  if (tmpl.type === 'rate')        return { ...base, type: 'rate', unit: (tmpl as any).unit ?? '%', startValue: (tmpl as any).startValue ?? 0, targetValue: (tmpl as any).targetValue ?? 100, logs: [] };
+  if (tmpl.type === 'cumulative')  return { ...base, type: 'cumulative', targetTotal: (tmpl as any).targetTotal ?? 100, unit: (tmpl as any).unit ?? 'items', logs: [] };
   return { ...base, type: 'habit', logs: [] };
 }
 
@@ -45,13 +48,16 @@ function CustomForm({ onAdd, onCancel }: { onAdd: (g: Goal) => void; onCancel: (
   const [targetVal, setTargetVal] = useState('');
   const [unit, setUnit] = useState('%');
   const [targetRate, setTargetRate] = useState('90');
+  const [targetTotal, setTargetTotal] = useState('');
+  const [cumUnit, setCumUnit] = useState('');
 
   const submit = () => {
     if (!title.trim()) return;
     const base = { id: uuidv4(), title: title.trim(), description: desc.trim(), emoji, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-    if (type === 'rate')        onAdd({ ...base, type: 'rate', unit, startValue: parseFloat(startVal)||0, targetValue: parseFloat(targetVal)||100, logs: [] });
+    if (type === 'rate')             onAdd({ ...base, type: 'rate', unit, startValue: parseFloat(startVal)||0, targetValue: parseFloat(targetVal)||100, logs: [] });
     else if (type === 'consistency') onAdd({ ...base, type: 'consistency', targetRate: parseInt(targetRate)||80, logs: [] });
-    else onAdd({ ...base, type: 'habit', logs: [] });
+    else if (type === 'cumulative')  onAdd({ ...base, type: 'cumulative', targetTotal: parseFloat(targetTotal)||100, unit: cumUnit||'items', logs: [] });
+    else                             onAdd({ ...base, type: 'habit', logs: [] });
   };
 
   return (
@@ -64,8 +70,8 @@ function CustomForm({ onAdd, onCancel }: { onAdd: (g: Goal) => void; onCancel: (
       </div>
       <input type="text" placeholder="Goal title" value={title} onChange={e=>setTitle(e.target.value)} className="w-full"/>
       <textarea placeholder="What does success look like?" value={desc} onChange={e=>setDesc(e.target.value)} className="w-full resize-none" rows={2}/>
-      <div className="grid grid-cols-3 gap-2">
-        {(['rate','habit','consistency'] as GoalType[]).map(t => (
+      <div className="grid grid-cols-2 gap-2">
+        {(['rate','habit','consistency','cumulative'] as GoalType[]).map(t => (
           <button key={t} onClick={() => setType(t)} className="p-2 rounded-lg text-xs font-bold text-center transition-all"
             style={{ background: type===t?'rgba(249,201,35,0.15)':'rgba(255,255,255,0.06)', border:`2px solid ${type===t?'rgba(249,201,35,0.5)':'transparent'}`, color: type===t?'#f9c923':'rgba(255,255,255,0.5)' }}>
             {TYPE_INFO[t].label}
@@ -83,6 +89,18 @@ function CustomForm({ onAdd, onCancel }: { onAdd: (g: Goal) => void; onCancel: (
         <div>
           <label className="text-xs text-white/40 mb-1 block">Target hit rate (%)</label>
           <input type="number" placeholder="e.g. 90" value={targetRate} onChange={e=>setTargetRate(e.target.value)} className="w-full"/>
+        </div>
+      )}
+      {type==='cumulative' && (
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-xs text-white/40 mb-1 block">Monthly target</label>
+            <input type="number" placeholder="e.g. 100" value={targetTotal} onChange={e=>setTargetTotal(e.target.value)} className="w-full"/>
+          </div>
+          <div>
+            <label className="text-xs text-white/40 mb-1 block">Unit</label>
+            <input type="text" placeholder="calls, demos..." value={cumUnit} onChange={e=>setCumUnit(e.target.value)} className="w-full"/>
+          </div>
         </div>
       )}
       <div className="flex gap-2">
@@ -182,7 +200,7 @@ export default function OnboardingFlow({ takenAvatars, onComplete }: Props) {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="grid grid-cols-2 gap-2 mb-4">
               {(Object.entries(TYPE_INFO) as [GoalType, typeof TYPE_INFO[GoalType]][]).map(([t, info]) => (
                 <div key={t} className="p-2 rounded-xl text-center" style={{ background:'rgba(0,0,0,0.25)', border:`1px solid ${info.color}25` }}>
                   <div className="text-xs font-bold mb-1" style={{ color:info.color }}>{info.label}</div>
@@ -192,11 +210,11 @@ export default function OnboardingFlow({ takenAvatars, onComplete }: Props) {
             </div>
 
             {goals.map((g, i) => (
-              <div key={i} className="flex items-center gap-2 p-2.5 rounded-xl mb-2" style={{ background:'rgba(0,0,0,0.3)', border:`1px solid ${TYPE_INFO[g.type].color}40` }}>
+              <div key={i} className="flex items-center gap-2 p-2.5 rounded-xl mb-2" style={{ background:'rgba(0,0,0,0.3)', border:`1px solid ${TYPE_INFO[g.type as GoalType]?.color}40` }}>
                 <span className="text-lg">{g.emoji}</span>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-bold text-white leading-tight">{g.title}</div>
-                  <div className="text-[10px] mt-0.5" style={{ color:TYPE_INFO[g.type].color }}>{TYPE_INFO[g.type].label}</div>
+                  <div className="text-[10px] mt-0.5" style={{ color:TYPE_INFO[g.type as GoalType]?.color }}>{TYPE_INFO[g.type as GoalType]?.label}</div>
                 </div>
                 <button onClick={() => setGoals(prev=>prev.filter((_,j)=>j!==i))} className="text-white/30 hover:text-red-400 transition-colors p-1 text-sm">✕</button>
               </div>
@@ -215,7 +233,7 @@ export default function OnboardingFlow({ takenAvatars, onComplete }: Props) {
                       <span className="text-lg">{tmpl.emoji}</span>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-semibold text-white leading-tight">{tmpl.title}</div>
-                        <div className="text-[10px]" style={{ color:TYPE_INFO[tmpl.type].color }}>{TYPE_INFO[tmpl.type].label}</div>
+                        <div className="text-[10px]" style={{ color:TYPE_INFO[tmpl.type]?.color }}>{TYPE_INFO[tmpl.type]?.label}</div>
                       </div>
                       <span className="text-white/30 text-lg flex-shrink-0">+</span>
                     </button>

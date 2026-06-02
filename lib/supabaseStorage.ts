@@ -136,6 +136,61 @@ export async function logCumulative(goalId: string, amount: number, note?: strin
     .insert({ goal_id: goalId, date: d, amount, note: note ?? null });
 }
 
+export interface ActivityItem {
+  id: string;
+  createdAt: string;
+  playerName: string;
+  playerAvatar: string;
+  goalTitle: string;
+  goalEmoji: string;
+  goalType: string;
+  summary: string;
+  isPto: boolean;
+}
+
+export async function getRecentActivity(limit = 20): Promise<ActivityItem[]> {
+  const [{ data: habitLogs }, { data: consistencyLogs }, { data: cumulativeLogs }] = await Promise.all([
+    getSupabase().from('habit_logs')
+      .select('id, date, completed, note, created_at, goals(type, title, emoji, player_id, players(name, avatar))')
+      .order('created_at', { ascending: false }).limit(limit),
+    getSupabase().from('consistency_logs')
+      .select('id, date, handled, total, note, created_at, goals(type, title, emoji, player_id, players(name, avatar))')
+      .order('created_at', { ascending: false }).limit(limit),
+    getSupabase().from('cumulative_logs')
+      .select('id, date, amount, note, created_at, goals(type, title, emoji, unit, player_id, players(name, avatar))')
+      .order('created_at', { ascending: false }).limit(limit),
+  ]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const map = (raw: any[], type: string): ActivityItem[] => (raw ?? []).map((l: any) => {
+    const goal = l.goals;
+    const player = goal?.players;
+    if (!goal || !player) return null;
+    const isPto = l.note === '__pto__';
+    let summary = '';
+    if (isPto) summary = '🏖️ PTO';
+    else if (type === 'habit') summary = l.completed ? '✅ Hit it' : '❌ Missed';
+    else if (type === 'consistency' || (type === 'consistency' && goal.type === 'rate')) {
+      const rate = l.total > 0 ? Math.round((l.handled / l.total) * 100) : 0;
+      summary = `${l.handled}/${l.total} → ${rate}%`;
+    } else if (type === 'cumulative') summary = `+${l.amount} ${goal.unit ?? ''}`.trim();
+    return {
+      id: l.id, createdAt: l.created_at,
+      playerName: player.name, playerAvatar: player.avatar,
+      goalTitle: goal.title, goalEmoji: goal.emoji ?? '🎯',
+      goalType: goal.type, summary, isPto,
+    };
+  }).filter((x): x is ActivityItem => x !== null);
+
+  const all = [
+    ...map(habitLogs ?? [], 'habit'),
+    ...map(consistencyLogs ?? [], 'consistency'),
+    ...map(cumulativeLogs ?? [], 'cumulative'),
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, limit);
+
+  return all;
+}
+
 export async function clearLog(goalId: string, goalType: string, date: string): Promise<void> {
   const tables: Record<string, string> = {
     rate: 'rate_logs', habit: 'habit_logs',

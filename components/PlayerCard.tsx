@@ -1,6 +1,6 @@
 import React from 'react';
 import { Player, Goal, RateGoal, HabitGoal, ConsistencyGoal, CumulativeGoal } from '../types';
-import { getGoalProgress, getPlayerOverall, getRateProgress, getHabitProgress, getConsistencyProgress, getCumulativeProgress } from '../lib/storage';
+import { getGoalProgress, getPlayerOverall, getRateProgress, getHabitProgress, getHabitStreak, getConsistencyProgress, getCumulativeProgress } from '../lib/storage';
 import AnimalAvatarImg from './AnimalAvatar';
 
 interface Props {
@@ -81,6 +81,7 @@ function RateDisplay({ goal, onLog, onDelete }: { goal: RateGoal; onLog: () => v
 // ---- Habit goal display ----
 function HabitDisplay({ goal, onLog, onDelete }: { goal: HabitGoal; onLog: () => void; onDelete: () => void }) {
   const { doneDays, totalDays, pct, todayLogged, todayCompleted } = getHabitProgress(goal);
+  const { current: streak } = getHabitStreak(goal);
   const complete = pct >= 80 && totalDays >= 10;
   // Last 7 day dots
   const today = new Date();
@@ -101,7 +102,10 @@ function HabitDisplay({ goal, onLog, onDelete }: { goal: HabitGoal; onLog: () =>
         <div className="flex-1 min-w-0">
           <div className="text-xs font-bold text-white leading-snug">{goal.title}</div>
           <div className="text-[11px] text-white/40 mt-0.5">{goal.description}</div>
-          <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider" style={{ background: 'rgba(74,222,128,0.1)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.2)' }}>✅ Habit</span>
+          <div className="flex items-center gap-1.5 mt-1">
+            <span className="text-[9px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider" style={{ background: 'rgba(74,222,128,0.1)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.2)' }}>✅ Habit</span>
+            {streak > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded font-bold" style={{ background: 'rgba(249,115,22,0.15)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.25)' }}>🔥 {streak} day{streak !== 1 ? 's' : ''}</span>}
+          </div>
         </div>
         <div className="flex gap-1 flex-shrink-0">
           <button onClick={onLog} className="text-xs px-3 py-2 rounded-lg font-bold active:scale-95 transition-transform" style={{ background: '#f9c923', color: '#1a1a1a' }}>+ Log</button>

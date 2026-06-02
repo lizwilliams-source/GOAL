@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { AppData, Player, Goal } from '../types';
 import * as sb from '../lib/supabaseStorage';
 import { getPlayerOverall } from '../lib/storage';
@@ -11,6 +12,7 @@ import SoccerBall from '../components/SoccerBall';
 import AddGoalModal from '../components/AddGoalModal';
 
 export default function Home() {
+  const router = useRouter();
   const [data, setData] = useState<AppData | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [checkIn, setCheckIn] = useState<{ player: Player; goal: Goal } | null>(null);
@@ -69,9 +71,15 @@ export default function Home() {
   );
 
   const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
   const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
   const monthPct = Math.round((today.getDate() / daysInMonth) * 100);
   const teamAvg = data.players.length === 0 ? 0 : Math.round(data.players.reduce((s, p) => s + getPlayerOverall(p), 0) / data.players.length);
+  const notLoggedToday = data.players.filter(p =>
+    p.goals.length > 0 && !p.goals.some(g =>
+      (g.logs as { date: string }[]).some(l => l.date === todayStr)
+    )
+  );
 
   return (
     <>
@@ -105,11 +113,18 @@ export default function Home() {
                   </p>
                 </div>
               </div>
-              <button onClick={() => setShowOnboarding(true)}
-                className="text-xs px-3 py-1.5 rounded-lg font-bold hover:scale-105 transition-all"
-                style={{ background:'#f9c923', color:'#1a1a1a' }}>
-                + Add Player
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => router.push('/dashboard')}
+                  className="text-xs px-3 py-1.5 rounded-lg font-bold hover:scale-105 transition-all"
+                  style={{ background:'rgba(249,201,35,0.15)', color:'#f9c923', border:'1px solid rgba(249,201,35,0.3)' }}>
+                  📊
+                </button>
+                <button onClick={() => setShowOnboarding(true)}
+                  className="text-xs px-3 py-1.5 rounded-lg font-bold hover:scale-105 transition-all"
+                  style={{ background:'#f9c923', color:'#1a1a1a' }}>
+                  + Add Player
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-3 gap-2 rounded-xl p-3" style={{ background:'rgba(0,0,0,0.5)', border:'1px solid rgba(249,201,35,0.15)' }}>
               <div className="text-center">
@@ -132,6 +147,15 @@ export default function Home() {
         </header>
 
         <main className="max-w-2xl mx-auto px-4 py-6 pb-24 sm:pb-6">
+          {notLoggedToday.length > 0 && (
+            <div className="mb-4 px-3 py-2.5 rounded-xl flex items-center gap-2.5" style={{ background:'rgba(251,146,60,0.1)', border:'1px solid rgba(251,146,60,0.2)' }}>
+              <span className="text-base">⏰</span>
+              <div className="flex-1 min-w-0">
+                <span className="text-xs text-white/60">Hasn&apos;t logged today: </span>
+                <span className="text-xs font-semibold text-white/80">{notLoggedToday.map(p => p.name).join(', ')}</span>
+              </div>
+            </div>
+          )}
           {data.players.length === 0 ? (
             <div className="text-center py-16 rounded-2xl" style={{ background:'rgba(0,0,0,0.25)', border:'2px dashed rgba(255,255,255,0.1)' }}>
               <div className="text-6xl mb-3">⚽</div>

@@ -107,30 +107,45 @@ export function logCumulative(data: AppData, playerId: string, goalId: string, a
   return updatePlayer(data, playerId, { goals });
 }
 
-// --- Progress calculations ---
+// --- Helpers ---
 
-export function getRateProgress(goal: RateGoal): {
-  totalMade: number; totalAttempts: number; rate: number; progressPct: number;
-  recentLogs: typeof goal.logs;
-} {
-  const totalMade = goal.logs.reduce((s, l) => s + l.made, 0);
-  const totalAttempts = goal.logs.reduce((s, l) => s + l.attempts, 0);
-  const rate = totalAttempts === 0 ? 0 : Math.round((totalMade / totalAttempts) * 100);
-  const progressPct = goal.targetRate === 0 ? 100 : Math.min(100, Math.round((rate / goal.targetRate) * 100));
-  const recentLogs = [...goal.logs].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
-  return { totalMade, totalAttempts, rate, progressPct, recentLogs };
-}
+function thisMonthStr(): string { return new Date().toISOString().slice(0, 7); }
 
 function isWeekend(dateStr: string): boolean {
   const d = new Date(dateStr + 'T12:00:00');
   return d.getDay() === 0 || d.getDay() === 6;
 }
 
+function nextWorkday(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() + 1);
+  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+  return d.toISOString().split('T')[0];
+}
+
+// --- Progress calculations (all filtered to current month) ---
+
+export function getRateProgress(goal: RateGoal): {
+  totalMade: number; totalAttempts: number; rate: number; progressPct: number;
+  recentLogs: typeof goal.logs;
+} {
+  const month = thisMonthStr();
+  const monthLogs = goal.logs.filter(l => l.date.startsWith(month));
+  const totalMade = monthLogs.reduce((s, l) => s + l.made, 0);
+  const totalAttempts = monthLogs.reduce((s, l) => s + l.attempts, 0);
+  const rate = totalAttempts === 0 ? 0 : Math.round((totalMade / totalAttempts) * 100);
+  const progressPct = goal.targetRate === 0 ? 100 : Math.min(100, Math.round((rate / goal.targetRate) * 100));
+  const recentLogs = [...monthLogs].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+  return { totalMade, totalAttempts, rate, progressPct, recentLogs };
+}
+
 export function getHabitProgress(goal: HabitGoal): {
   doneDays: number; totalDays: number; pct: number; todayLogged: boolean; todayCompleted: boolean | null;
 } {
   const today = new Date().toISOString().split('T')[0];
-  const weekdayLogs = goal.logs.filter(l => !isWeekend(l.date) && l.note !== '__pto__');
+  const month = thisMonthStr();
+  const monthLogs = goal.logs.filter(l => l.date.startsWith(month));
+  const weekdayLogs = monthLogs.filter(l => !isWeekend(l.date) && l.note !== '__pto__');
   const doneDays = weekdayLogs.filter(l => l.completed).length;
   const totalDays = weekdayLogs.length;
   const pct = totalDays === 0 ? 0 : Math.round((doneDays / totalDays) * 100);
@@ -138,15 +153,44 @@ export function getHabitProgress(goal: HabitGoal): {
   return { doneDays, totalDays, pct, todayLogged: !!todayEntry, todayCompleted: todayEntry?.completed ?? null };
 }
 
+export function getHabitStreak(goal: HabitGoal): { current: number; best: number } {
+  const completedDates = goal.logs
+    .filter(l => !isWeekend(l.date) && l.note !== '__pto__' && l.completed)
+    .map(l => l.date)
+    .sort();
+  if (completedDates.length === 0) return { current: 0, best: 0 };
+
+  const runs: number[] = [];
+  let run = 1;
+  for (let i = 1; i < completedDates.length; i++) {
+    if (nextWorkday(completedDates[i - 1]) === completedDates[i]) { run++; }
+    else { runs.push(run); run = 1; }
+  }
+  runs.push(run);
+  const best = Math.max(...runs);
+
+  const today = new Date().toISOString().split('T')[0];
+  const lastCompleted = completedDates[completedDates.length - 1];
+  const prevWd = (() => {
+    const d = new Date(); d.setDate(d.getDate() - 1);
+    while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() - 1);
+    return d.toISOString().split('T')[0];
+  })();
+  const current = (lastCompleted === today || lastCompleted === prevWd) ? runs[runs.length - 1] : 0;
+  return { current, best };
+}
+
 export function getConsistencyProgress(goal: ConsistencyGoal): {
   totalHandled: number; totalInstances: number; rate: number; progressPct: number;
   recentLogs: typeof goal.logs;
 } {
-  const totalHandled = goal.logs.reduce((s, l) => s + l.handled, 0);
-  const totalInstances = goal.logs.reduce((s, l) => s + l.total, 0);
+  const month = thisMonthStr();
+  const monthLogs = goal.logs.filter(l => l.date.startsWith(month));
+  const totalHandled = monthLogs.reduce((s, l) => s + l.handled, 0);
+  const totalInstances = monthLogs.reduce((s, l) => s + l.total, 0);
   const rate = totalInstances === 0 ? 0 : Math.round((totalHandled / totalInstances) * 100);
   const progressPct = goal.targetRate === 0 ? 100 : Math.min(100, Math.round((rate / goal.targetRate) * 100));
-  const recentLogs = [...goal.logs].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+  const recentLogs = [...monthLogs].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
   return { totalHandled, totalInstances, rate, progressPct, recentLogs };
 }
 

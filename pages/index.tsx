@@ -85,6 +85,9 @@ export default function Home() {
     while (n < 2) { d.setDate(d.getDate() - 1); if (d.getDay() !== 0 && d.getDay() !== 6) n++; }
     return d.toISOString().split('T')[0];
   })();
+  const monthStart = new Date().toISOString().slice(0, 7) + '-01';
+  // Only flag 🚨 if 2+ working days have already elapsed this month
+  const canBeReallyBehind = twoWorkdaysAgo >= monthStart;
   const lastLog = (p: Player) => {
     const dates = p.goals.flatMap(g => (g.logs as {date:string}[]).map(l => l.date));
     return dates.length > 0 ? dates.sort().pop()! : null;
@@ -168,7 +171,7 @@ export default function Home() {
                 <span className="text-xs text-white/50">Didn&apos;t log yesterday:</span>
                 {notLoggedYesterday.map(p => {
                   const last = lastLog(p);
-                  const reallyBehind = !last || last < twoWorkdaysAgo;
+                  const reallyBehind = canBeReallyBehind && (!last || last < twoWorkdaysAgo);
                   return (
                     <span key={p.id} className="text-xs font-semibold" style={{ color: reallyBehind ? '#f87171' : 'rgba(255,255,255,0.75)' }}>
                       {p.name}{reallyBehind ? ' 🚨' : ''}
@@ -176,7 +179,7 @@ export default function Home() {
                   );
                 })}
               </div>
-              {notLoggedYesterday.some(p => { const l = lastLog(p); return !l || l < twoWorkdaysAgo; }) && (
+              {canBeReallyBehind && notLoggedYesterday.some(p => { const l = lastLog(p); return !l || l < twoWorkdaysAgo; }) && (
                 <div className="text-[10px] text-red-400/60 mt-1 ml-6">🚨 = 2+ days behind</div>
               )}
             </div>

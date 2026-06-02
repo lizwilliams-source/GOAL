@@ -131,7 +131,7 @@ export function getHabitProgress(goal: HabitGoal): {
   doneDays: number; totalDays: number; pct: number; todayLogged: boolean; todayCompleted: boolean | null;
 } {
   const today = new Date().toISOString().split('T')[0];
-  const weekdayLogs = goal.logs.filter(l => !isWeekend(l.date));
+  const weekdayLogs = goal.logs.filter(l => !isWeekend(l.date) && l.note !== '__pto__');
   const doneDays = weekdayLogs.filter(l => l.completed).length;
   const totalDays = weekdayLogs.length;
   const pct = totalDays === 0 ? 0 : Math.round((doneDays / totalDays) * 100);

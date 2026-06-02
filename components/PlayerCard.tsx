@@ -91,7 +91,7 @@ function HabitDisplay({ goal, onLog, onDelete }: { goal: HabitGoal; onLog: () =>
     const ds = d.toISOString().split('T')[0];
     const weekend = d.getDay() === 0 || d.getDay() === 6;
     const entry = goal.logs.find(l => l.date === ds);
-    const state = weekend ? 'off' : entry ? (entry.completed ? 'yes' : 'no') : 'empty';
+    const state = weekend ? 'off' : entry?.note === '__pto__' ? 'pto' : entry ? (entry.completed ? 'yes' : 'no') : 'empty';
     return { ds, state };
   });
 
@@ -115,10 +115,10 @@ function HabitDisplay({ goal, onLog, onDelete }: { goal: HabitGoal; onLog: () =>
         {dots.map(d => (
           <div key={d.ds} className="flex-1 h-5 rounded-sm flex items-center justify-center text-[9px]"
             style={{
-              background: d.state === 'yes' ? '#16a34a' : d.state === 'no' ? 'rgba(220,38,38,0.5)' : d.state === 'off' ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
+              background: d.state === 'yes' ? '#16a34a' : d.state === 'no' ? 'rgba(220,38,38,0.5)' : d.state === 'pto' ? 'rgba(13,148,136,0.5)' : d.state === 'off' ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
               border: d.ds === today.toISOString().split('T')[0] ? '1px solid rgba(249,201,35,0.6)' : '1px solid transparent',
             }}>
-            {d.state === 'yes' ? '✓' : d.state === 'no' ? '✕' : d.state === 'off' ? '—' : '·'}
+            {d.state === 'yes' ? '✓' : d.state === 'no' ? '✕' : d.state === 'pto' ? '🏖' : d.state === 'off' ? '—' : '·'}
           </div>
         ))}
       </div>

@@ -8,6 +8,7 @@ interface Props {
   goal: Goal;
   onSubmitRate: (value: number, note?: string, date?: string) => void;
   onSubmitHabit: (completed: boolean, note?: string, date?: string) => void;
+  onSubmitPto: (date?: string) => void;
   onSubmitConsistency: (handled: number, total: number, note?: string, date?: string) => void;
   onSubmitCumulative: (amount: number, note?: string, date?: string) => void;
   onClear: (date: string) => void;
@@ -26,12 +27,13 @@ function Celebrating({ onDone }: { onDone: () => void }) {
   );
 }
 
-type DateStatus = 'empty' | 'yes' | 'no' | 'logged';
+type DateStatus = 'empty' | 'yes' | 'no' | 'logged' | 'pto';
 
 function getDateStatus(goal: Goal, dateStr: string): DateStatus {
   if (goal.type === 'habit') {
     const entry = (goal as HabitGoal).logs.find(l => l.date === dateStr);
     if (!entry) return 'empty';
+    if (entry.note === '__pto__') return 'pto';
     return entry.completed ? 'yes' : 'no';
   }
   const hasLog = (goal.logs as { date: string }[]).some(l => l.date === dateStr);
@@ -41,6 +43,7 @@ function getDateStatus(goal: Goal, dateStr: string): DateStatus {
 function statusBg(status: DateStatus, goalType: string): string {
   if (status === 'yes') return '#16a34a';
   if (status === 'no') return 'rgba(220,38,38,0.7)';
+  if (status === 'pto') return 'rgba(20,184,166,0.55)';
   if (status === 'logged') {
     if (goalType === 'rate') return 'rgba(96,165,250,0.55)';
     if (goalType === 'consistency') return 'rgba(251,146,60,0.55)';
@@ -167,11 +170,12 @@ function RateCheckIn({ goal, onSubmit }: { goal: RateGoal; onSubmit: (v: number,
 }
 
 // ---- HABIT check-in ----
-function HabitCheckIn({ goal, date, onSubmit }: { goal: HabitGoal; date: string; onSubmit: (c: boolean, n?: string) => void }) {
-  const [completed, setCompleted] = useState(true);
+function HabitCheckIn({ goal, date, onSubmit, onSubmitPto }: { goal: HabitGoal; date: string; onSubmit: (c: boolean, n?: string) => void; onSubmitPto: () => void }) {
+  const [mode, setMode] = useState<'yes' | 'no' | 'pto'>('yes');
   const [note, setNote] = useState('');
   const { doneDays, totalDays, pct } = getHabitProgress(goal);
   const dateEntry = goal.logs.find(l => l.date === date);
+  const dateStatus = dateEntry ? (dateEntry.note === '__pto__' ? 'PTO 🏖️' : dateEntry.completed ? '✅ Yes' : '❌ No') : null;
 
   return (
     <div>
@@ -179,34 +183,41 @@ function HabitCheckIn({ goal, date, onSubmit }: { goal: HabitGoal; date: string;
         <div className="mb-4 p-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.3)' }}>
           <div className="flex items-baseline justify-between mb-1">
             <span className="text-2xl font-black" style={{ fontFamily: 'Black Han Sans', color: pct >= 80 ? '#4ade80' : '#60a5fa' }}>{pct}%</span>
-            <span className="text-xs text-white/40">{doneDays}/{totalDays} days</span>
+            <span className="text-xs text-white/40">{doneDays}/{totalDays} weekdays</span>
           </div>
           <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.4)' }}>
             <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: pct >= 80 ? '#4ade80' : '#60a5fa' }}/>
           </div>
-          {dateEntry && (
-            <div className="mt-2 text-xs text-white/40">Already logged: {dateEntry.completed ? '✅ Yes' : '❌ No'} — tap to update</div>
+          {dateStatus && (
+            <div className="mt-2 text-xs text-white/40">Already logged: {dateStatus} — tap to update</div>
           )}
         </div>
       )}
-      <label className="text-xs text-white/50 uppercase tracking-wider mb-3 block">Did you do it?</label>
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <button onClick={() => setCompleted(true)}
-          className="py-6 rounded-2xl font-black transition-all duration-150"
-          style={{ background: completed ? '#16a34a' : 'rgba(255,255,255,0.06)', border: `3px solid ${completed ? '#15803d' : 'rgba(255,255,255,0.1)'}`, color: 'white', transform: completed ? 'scale(1.04)' : 'scale(1)' }}>
-          <div className="text-3xl mb-1">✅</div><div className="text-sm" style={{ fontFamily: 'Oswald' }}>YES</div>
+      <label className="text-xs text-white/50 uppercase tracking-wider mb-3 block">Log this day</label>
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <button onClick={() => setMode('yes')}
+          className="py-5 rounded-2xl font-black transition-all duration-150"
+          style={{ background: mode === 'yes' ? '#16a34a' : 'rgba(255,255,255,0.06)', border: `3px solid ${mode === 'yes' ? '#15803d' : 'rgba(255,255,255,0.1)'}`, color: 'white', transform: mode === 'yes' ? 'scale(1.04)' : 'scale(1)' }}>
+          <div className="text-2xl mb-1">✅</div><div className="text-xs" style={{ fontFamily: 'Oswald' }}>YES</div>
         </button>
-        <button onClick={() => setCompleted(false)}
-          className="py-6 rounded-2xl font-black transition-all duration-150"
-          style={{ background: !completed ? '#dc2626' : 'rgba(255,255,255,0.06)', border: `3px solid ${!completed ? '#b91c1c' : 'rgba(255,255,255,0.1)'}`, color: 'white', transform: !completed ? 'scale(1.04)' : 'scale(1)' }}>
-          <div className="text-3xl mb-1">❌</div><div className="text-sm" style={{ fontFamily: 'Oswald' }}>NO</div>
+        <button onClick={() => setMode('no')}
+          className="py-5 rounded-2xl font-black transition-all duration-150"
+          style={{ background: mode === 'no' ? '#dc2626' : 'rgba(255,255,255,0.06)', border: `3px solid ${mode === 'no' ? '#b91c1c' : 'rgba(255,255,255,0.1)'}`, color: 'white', transform: mode === 'no' ? 'scale(1.04)' : 'scale(1)' }}>
+          <div className="text-2xl mb-1">❌</div><div className="text-xs" style={{ fontFamily: 'Oswald' }}>NO</div>
+        </button>
+        <button onClick={() => setMode('pto')}
+          className="py-5 rounded-2xl font-black transition-all duration-150"
+          style={{ background: mode === 'pto' ? '#0d9488' : 'rgba(255,255,255,0.06)', border: `3px solid ${mode === 'pto' ? '#0f766e' : 'rgba(255,255,255,0.1)'}`, color: 'white', transform: mode === 'pto' ? 'scale(1.04)' : 'scale(1)' }}>
+          <div className="text-2xl mb-1">🏖️</div><div className="text-xs" style={{ fontFamily: 'Oswald' }}>PTO</div>
         </button>
       </div>
-      <textarea placeholder="Note (optional)" value={note} onChange={e => setNote(e.target.value)} className="w-full resize-none mb-4" rows={2}/>
-      <button onClick={() => onSubmit(completed, note || undefined)}
+      {mode !== 'pto' && (
+        <textarea placeholder="Note (optional)" value={note} onChange={e => setNote(e.target.value)} className="w-full resize-none mb-4" rows={2}/>
+      )}
+      <button onClick={() => mode === 'pto' ? onSubmitPto() : onSubmit(mode === 'yes', note || undefined)}
         className="w-full py-2.5 rounded-xl font-black text-sm hover:scale-105 transition-transform"
-        style={{ background: '#f9c923', color: '#1a1a1a', fontFamily: 'Oswald' }}>
-        ⚽ LOG IT
+        style={{ background: mode === 'pto' ? '#0d9488' : '#f9c923', color: mode === 'pto' ? 'white' : '#1a1a1a', fontFamily: 'Oswald' }}>
+        {mode === 'pto' ? '🏖️ MARK AS PTO' : '⚽ LOG IT'}
       </button>
     </div>
   );
@@ -313,7 +324,7 @@ function ConsistencyCheckIn({ goal, onSubmit }: { goal: ConsistencyGoal; onSubmi
   );
 }
 
-export default function CheckInModal({ player, goal, onSubmitRate, onSubmitHabit, onSubmitConsistency, onSubmitCumulative, onClear, onClose }: Props) {
+export default function CheckInModal({ player, goal, onSubmitRate, onSubmitHabit, onSubmitPto, onSubmitConsistency, onSubmitCumulative, onClear, onClose }: Props) {
   const [done, setDone] = useState(false);
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
 
@@ -354,7 +365,9 @@ export default function CheckInModal({ player, goal, onSubmitRate, onSubmitHabit
           <RateCheckIn goal={goal} onSubmit={(v, n) => { onSubmitRate(v, n, selectedDate); setDone(true); }}/>
         )}
         {goal.type === 'habit' && (
-          <HabitCheckIn goal={goal} date={selectedDate} onSubmit={(c, n) => { onSubmitHabit(c, n, selectedDate); setDone(true); }}/>
+          <HabitCheckIn goal={goal} date={selectedDate}
+            onSubmit={(c, n) => { onSubmitHabit(c, n, selectedDate); setDone(true); }}
+            onSubmitPto={() => { onSubmitPto(selectedDate); setDone(true); }}/>
         )}
         {goal.type === 'consistency' && (
           <ConsistencyCheckIn goal={goal} onSubmit={(h, t, n) => { onSubmitConsistency(h, t, n, selectedDate); setDone(true); }}/>

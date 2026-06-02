@@ -113,6 +113,12 @@ export async function logRate(goalId: string, value: number, note?: string, date
     .upsert({ goal_id: goalId, date: d, value, note: note ?? null }, { onConflict: 'goal_id,date' });
 }
 
+export async function logPto(goalId: string, date?: string): Promise<void> {
+  const d = date ?? new Date().toISOString().split('T')[0];
+  await getSupabase().from('habit_logs')
+    .upsert({ goal_id: goalId, date: d, completed: false, note: '__pto__' }, { onConflict: 'goal_id,date' });
+}
+
 export async function logHabit(goalId: string, completed: boolean, note?: string, date?: string): Promise<void> {
   const d = date ?? new Date().toISOString().split('T')[0];
   await getSupabase().from('habit_logs')

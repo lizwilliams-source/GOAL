@@ -240,7 +240,12 @@ export default function PlayerCard({
   expanded = false, onToggle, isMe = false
 }: Props) {
   const overall = getPlayerOverall(player);
-  const complete = overall >= 100;
+  // complete = every goal truly hit its target (raw), not just pace-adjusted
+  const complete = player.goals.length > 0 && player.goals.every(goal =>
+    goal.type === 'cumulative'
+      ? getCumulativeProgress(goal as CumulativeGoal).progressPct >= 100
+      : getGoalProgress(goal) >= 100
+  );
   const cumulativeGoals = player.goals.filter((g): g is CumulativeGoal => g.type === 'cumulative');
   const cumulativeProgresses = cumulativeGoals.map(g => getCumulativeProgress(g));
   const allCumulativeOnPace = cumulativeGoals.length > 0 && cumulativeProgresses.every(p => p.onPace);

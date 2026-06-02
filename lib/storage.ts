@@ -185,7 +185,13 @@ export function getGoalProgress(goal: Goal): number {
   if (goal.type === 'rate') return getRateProgress(goal).progressPct;
   if (goal.type === 'habit') return getHabitProgress(goal).pct;
   if (goal.type === 'consistency') return getConsistencyProgress(goal).progressPct;
-  if (goal.type === 'cumulative') return getCumulativeProgress(goal).progressPct;
+  if (goal.type === 'cumulative') {
+    const { progressPct, pacePct } = getCumulativeProgress(goal);
+    // Score relative to pace so cumulative goals are fairly comparable to other types.
+    // On pace = ~100, ahead = 100 (capped), behind = proportionally less.
+    if (pacePct <= 0) return progressPct;
+    return Math.min(100, Math.round((progressPct / pacePct) * 100));
+  }
   return 0;
 }
 

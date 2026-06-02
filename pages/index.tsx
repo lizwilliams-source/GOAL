@@ -30,6 +30,19 @@ export default function Home() {
     setExpandedId(newPlayerId);
   };
 
+  const handleClear = async (date: string) => {
+    if (!checkIn) return;
+    const { player, goal } = checkIn;
+    await sb.clearLog(goal.id, goal.type, date);
+    const newData = await sb.loadData();
+    setData(newData);
+    const updatedPlayer = newData.players.find(p => p.id === player.id);
+    if (updatedPlayer) {
+      const updatedGoal = updatedPlayer.goals.find(g => g.id === goal.id);
+      if (updatedGoal) setCheckIn({ player: updatedPlayer, goal: updatedGoal });
+    }
+  };
+
   const handleCheckIn = async (fn: () => Promise<void>) => {
     if (!checkIn) return;
     const prevOverall = getPlayerOverall(checkIn.player);
@@ -191,6 +204,7 @@ export default function Home() {
           onSubmitHabit={(c,n,d) => handleCheckIn(() => sb.logHabit(checkIn.goal.id, c, n, d))}
           onSubmitConsistency={(h,t,n,d) => handleCheckIn(() => sb.logConsistency(checkIn.goal.id, h, t, n, d))}
           onSubmitCumulative={(a,n,d) => handleCheckIn(() => sb.logCumulative(checkIn.goal.id, a, n, d))}
+          onClear={handleClear}
           onClose={() => setCheckIn(null)}/>
       )}
 

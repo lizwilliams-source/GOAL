@@ -128,3 +128,12 @@ export async function logCumulative(goalId: string, amount: number, note?: strin
   await getSupabase().from('cumulative_logs')
     .insert({ goal_id: goalId, date: d, amount, note: note ?? null });
 }
+
+export async function clearLog(goalId: string, goalType: string, date: string): Promise<void> {
+  const tables: Record<string, string> = {
+    rate: 'rate_logs', habit: 'habit_logs',
+    consistency: 'consistency_logs', cumulative: 'cumulative_logs',
+  };
+  const table = tables[goalType];
+  if (table) await getSupabase().from(table).delete().eq('goal_id', goalId).eq('date', date);
+}

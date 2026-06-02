@@ -213,7 +213,7 @@ export default function OnboardingFlow({ takenAvatars, onComplete }: Props) {
                 <div className="text-xs text-white/40">{ANIMAL_NAMES[animal]}</div>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-black text-yellow-400" style={{ fontFamily:'Black Han Sans' }}>{goals.length}/2</div>
+                <div className="text-2xl font-black text-yellow-400" style={{ fontFamily:'Black Han Sans' }}>{goals.length}/3</div>
                 <div className="text-[10px] text-white/30">goals</div>
               </div>
             </div>
@@ -240,7 +240,7 @@ export default function OnboardingFlow({ takenAvatars, onComplete }: Props) {
 
             {showCustom ? (
               <CustomForm onAdd={g=>{setGoals(prev=>[...prev,g]);setShowCustom(false);}} onCancel={()=>setShowCustom(false)}/>
-            ) : goals.length < 2 ? (
+            ) : goals.length < 3 ? (
               <>
                 <div className="text-xs text-white/40 uppercase tracking-wider mb-2">Quick add</div>
                 <div className="space-y-1.5 mb-3">
@@ -264,7 +264,7 @@ export default function OnboardingFlow({ takenAvatars, onComplete }: Props) {
                 </button>
               </>
             ) : (
-              <div className="text-center py-2 text-white/30 text-sm">Max 2 goals — you're set!</div>
+              <div className="text-center py-2 text-white/30 text-sm">Max 3 goals — you're set!</div>
             )}
 
             <div className="flex gap-3 mt-4">

@@ -37,7 +37,7 @@ export function removePlayer(data: AppData, playerId: string): AppData {
 
 export function addGoalToPlayer(data: AppData, playerId: string, goal: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>): AppData {
   const player = data.players.find(p => p.id === playerId);
-  if (!player || player.goals.length >= 2) return data;
+  if (!player || player.goals.length >= 3) return data;
   const newGoal: Goal = { ...goal, id: uuidv4(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as Goal;
   return updatePlayer(data, playerId, { goals: [...player.goals, newGoal] });
 }

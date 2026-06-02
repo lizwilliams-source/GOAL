@@ -250,18 +250,31 @@ export default function PlayerCard({
       ? allCumulativeOnPace ? '#4ade80' : '#a78bfa'
       : undefined;
 
-  // Label shown in collapsed header — avoid misleading raw % for cumulative goals
-  const headerLabel = (() => {
-    if (complete) return { text: `${overall}%`, color: '#f9c923' };
-    if (cumulativeGoals.length === 0) return { text: `${overall}%`, color: 'rgba(255,255,255,0.7)' };
-    if (allCumulativeOnPace) return { text: 'On pace', color: '#4ade80' };
-    // Show most behind goal's count
-    const mostBehind = cumulativeGoals.reduce((worst, g, i) =>
-      cumulativeProgresses[i].progressPct < (worst ? cumulativeProgresses[cumulativeGoals.indexOf(worst)].progressPct : 101) ? g : worst
-    , cumulativeGoals[0]);
-    const prog = getCumulativeProgress(mostBehind);
-    return { text: `${prog.total}/${mostBehind.targetTotal}`, color: '#a78bfa' };
-  })();
+  // Per-goal bar info for collapsed header
+  const goalBars = player.goals.map(goal => {
+    if (goal.type === 'habit') {
+      const { pct } = getHabitProgress(goal);
+      const c = pct >= 80 ? '#4ade80' : '#60a5fa';
+      return { emoji: goal.emoji, pct, color: c, label: `${pct}%` };
+    }
+    if (goal.type === 'consistency') {
+      const { rate, progressPct } = getConsistencyProgress(goal);
+      const c = rate >= goal.targetRate ? '#f9c923' : '#fb923c';
+      return { emoji: goal.emoji, pct: progressPct, color: c, label: `${rate}%` };
+    }
+    if (goal.type === 'rate') {
+      const { rate, progressPct } = getRateProgress(goal);
+      const c = progressPct >= 100 ? '#f9c923' : '#60a5fa';
+      return { emoji: goal.emoji, pct: progressPct, color: c, label: `${rate}%` };
+    }
+    if (goal.type === 'cumulative') {
+      const { total, progressPct, onPace } = getCumulativeProgress(goal);
+      const c = progressPct >= 100 ? '#f9c923' : onPace ? '#4ade80' : '#a78bfa';
+      const label = progressPct >= 100 ? '✓' : onPace ? 'On pace' : `${total}/${goal.targetTotal}`;
+      return { emoji: goal.emoji, pct: progressPct, color: c, label };
+    }
+    return { emoji: (goal as {emoji:string}).emoji, pct: 0, color: '#60a5fa', label: '—' };
+  });
 
   return (
     <div className={`relative rounded-2xl overflow-hidden transition-all duration-300 ${complete ? 'shadow-[0_0_24px_rgba(249,201,35,0.18)]' : ''}`}
@@ -276,9 +289,14 @@ export default function PlayerCard({
         <div className="flex-1 min-w-0">
           <div className="font-black text-white text-base leading-tight" style={{ fontFamily: 'Oswald' }}>{player.name}</div>
           <div className="text-xs text-white/40 mt-0.5">{player.goals.length} goal{player.goals.length !== 1 ? 's' : ''} · {expanded ? 'collapse ▲' : 'expand ▼'}</div>
-          <div className="mt-2 flex items-center gap-2">
-            <div className="flex-1"><Bar pct={overall} color={headerBarColor}/></div>
-            <span className="text-xs font-black flex-shrink-0" style={{ fontFamily: 'Oswald', color: headerLabel.color, minWidth: '36px', textAlign: 'right' }}>{headerLabel.text}</span>
+          <div className="mt-2 space-y-1.5">
+            {goalBars.map((b, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="text-xs w-4 flex-shrink-0">{b.emoji}</span>
+                <div className="flex-1"><Bar pct={b.pct} color={b.color}/></div>
+                <span className="text-[10px] font-black flex-shrink-0" style={{ fontFamily: 'Oswald', color: b.color, minWidth: '42px', textAlign: 'right' }}>{b.label}</span>
+              </div>
+            ))}
           </div>
         </div>
       </button>
@@ -295,7 +313,7 @@ export default function PlayerCard({
               if (goal.type === 'cumulative') return <CumulativeDisplay  key={goal.id} goal={goal} {...props}/>;
             })
           }
-          {player.goals.length < 2 && (
+          {player.goals.length < 3 && (
             <button onClick={() => onAddGoal(player)}
               className="w-full py-2 rounded-xl text-xs font-semibold text-white/50 hover:text-white transition-colors"
               style={{ background: 'rgba(255,255,255,0.06)', border: '1px dashed rgba(255,255,255,0.15)' }}>

@@ -8,7 +8,7 @@ interface Props {
 }
 
 export const ANIMAL_NAMES: Record<AnimalKind, string> = {
-  duck:    'Duck',
+  goose:   'Goose',
   goat:    'Goat',
   panda:   'Panda',
   giraffe: 'Giraffe',
@@ -21,7 +21,7 @@ export const ANIMAL_NAMES: Record<AnimalKind, string> = {
 };
 
 export const ALL_ANIMALS: AnimalKind[] = [
-  'duck','goat','panda','giraffe','cat',
+  'goose','goat','panda','giraffe','cat',
   'gorilla','sheep','tiger','cheetah','lizard',
 ];
 

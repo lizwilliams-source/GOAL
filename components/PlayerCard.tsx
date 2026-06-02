@@ -133,8 +133,9 @@ function HabitDisplay({ goal, onLog, onDelete }: { goal: HabitGoal; onLog: () =>
 
 // ---- Cumulative goal display ----
 function CumulativeDisplay({ goal, onLog, onDelete }: { goal: CumulativeGoal; onLog: () => void; onDelete: () => void }) {
-  const { total, progressPct, periodLabel } = getCumulativeProgress(goal);
+  const { total, progressPct, periodLabel, onPace } = getCumulativeProgress(goal);
   const complete = progressPct >= 100;
+  const barColor = complete ? '#f9c923' : onPace ? '#4ade80' : '#a78bfa';
   const todayStr = new Date().toISOString().split('T')[0];
   const todayTotal = goal.logs.filter(l => l.date === todayStr).reduce((s, l) => s + l.amount, 0);
 
@@ -154,16 +155,16 @@ function CumulativeDisplay({ goal, onLog, onDelete }: { goal: CumulativeGoal; on
         </div>
       </div>
       <div className="flex items-baseline gap-2 mb-2">
-        <span className="text-xl font-black" style={{ fontFamily: 'Black Han Sans', color: '#a78bfa' }}>{total}</span>
+        <span className="text-xl font-black" style={{ fontFamily: 'Black Han Sans', color: barColor }}>{total}</span>
         <span className="text-xs text-white/40">{goal.unit}</span>
         <span className="text-[10px] text-white/30 ml-auto">→ {goal.targetTotal} {periodLabel}</span>
       </div>
       {todayTotal > 0 && <div className="text-[10px] text-white/30 mb-1.5">Today: +{todayTotal} {goal.unit}</div>}
       <div className="flex justify-between text-[10px] text-white/30 mb-1">
-        <span>0</span>
-        <span className="font-bold" style={{ color: complete ? '#f9c923' : 'rgba(255,255,255,0.6)' }}>{progressPct}%</span>
+        <span>{onPace && !complete ? '✓ On pace' : !onPace ? 'Behind pace' : ''}</span>
+        <span className="font-bold" style={{ color: complete ? '#f9c923' : onPace ? '#4ade80' : 'rgba(255,255,255,0.6)' }}>{progressPct}%</span>
       </div>
-      <Bar pct={progressPct} color="#a78bfa"/>
+      <Bar pct={progressPct} color={barColor}/>
     </div>
   );
 }

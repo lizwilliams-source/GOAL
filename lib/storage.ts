@@ -151,26 +151,34 @@ export function getConsistencyProgress(goal: ConsistencyGoal): {
 }
 
 export function getCumulativeProgress(goal: CumulativeGoal): {
-  total: number; progressPct: number; periodLabel: string;
+  total: number; progressPct: number; periodLabel: string; onPace: boolean; pacePct: number;
 } {
-  const today = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
   let total: number;
   let periodLabel: string;
+  let pacePct: number;
+
   if (goal.targetPeriod === 'weekly') {
-    const now = new Date();
     const dow = now.getDay();
     const monday = new Date(now);
     monday.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
     const mondayStr = monday.toISOString().split('T')[0];
     total = goal.logs.filter(l => l.date >= mondayStr && l.date <= today).reduce((s, l) => s + l.amount, 0);
     periodLabel = 'this week';
+    const workDay = dow === 0 || dow === 6 ? 5 : dow; // Sat/Sun = end of week
+    pacePct = Math.round((workDay / 5) * 100);
   } else {
     const monthStr = today.slice(0, 7);
     total = goal.logs.filter(l => l.date.startsWith(monthStr)).reduce((s, l) => s + l.amount, 0);
     periodLabel = 'this month';
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    pacePct = Math.round((now.getDate() / daysInMonth) * 100);
   }
+
   const progressPct = goal.targetTotal === 0 ? 100 : Math.min(100, Math.round((total / goal.targetTotal) * 100));
-  return { total, progressPct, periodLabel };
+  const onPace = progressPct >= pacePct;
+  return { total, progressPct, periodLabel, onPace, pacePct };
 }
 
 export function getGoalProgress(goal: Goal): number {

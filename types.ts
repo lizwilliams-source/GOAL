@@ -14,7 +14,7 @@ export interface RateGoal {
 export interface HabitGoal {
   type: 'habit';
   id: string; title: string; description: string; emoji: string;
-  logs: { date: string; completed: boolean; note?: string }[];
+  logs: { date: string; completed: boolean; note?: string; loggedAt?: string }[];
   createdAt: string; updatedAt: string;
 }
 

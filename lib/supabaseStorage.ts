@@ -33,7 +33,7 @@ export async function loadData(): Promise<AppData> {
         type: 'habit', id: g.id, title: g.title, description: g.description ?? '',
         emoji: g.emoji ?? '🎯',
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        logs: (habitLogs ?? []).filter((l: any) => l.goal_id === g.id).map((l: any) => ({ date: l.date, completed: l.completed, note: l.note ?? undefined })),
+        logs: (habitLogs ?? []).filter((l: any) => l.goal_id === g.id).map((l: any) => ({ date: l.date, completed: l.completed, note: l.note ?? undefined, loggedAt: l.created_at ?? undefined })),
         createdAt: g.created_at, updatedAt: g.created_at,
       } as HabitGoal;
       if (g.type === 'consistency') return {

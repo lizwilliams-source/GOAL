@@ -155,7 +155,16 @@ export function getHabitProgress(goal: HabitGoal): {
 
 export function getHabitStreak(goal: HabitGoal): { current: number; best: number } {
   const completedDates = goal.logs
-    .filter(l => !isWeekend(l.date) && l.note !== '__pto__' && l.completed)
+    .filter(l => {
+      if (isWeekend(l.date) || l.note === '__pto__' || !l.completed) return false;
+      // Only count if logged within 1 day of the actual date (prevents retroactive streaks)
+      if (l.loggedAt) {
+        const diffMs = new Date(l.loggedAt).getTime() - new Date(l.date + 'T23:59:59').getTime();
+        const diffDays = diffMs / (1000 * 60 * 60 * 24);
+        if (diffDays > 1) return false;
+      }
+      return true;
+    })
     .map(l => l.date)
     .sort();
   if (completedDates.length === 0) return { current: 0, best: 0 };

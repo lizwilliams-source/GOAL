@@ -24,10 +24,9 @@ export async function loadData(): Promise<AppData> {
     const playerGoals: Goal[] = (goals ?? []).filter((g: any) => g.player_id === p.id).map((g: any): Goal | null => {
       if (g.type === 'rate') return {
         type: 'rate', id: g.id, title: g.title, description: g.description ?? '',
-        emoji: g.emoji ?? '🎯', unit: g.unit ?? '',
-        startValue: g.start_value ?? 0, targetValue: g.target_value ?? 100,
+        emoji: g.emoji ?? '🎯', unit: g.unit ?? 'rate', targetRate: g.target_rate ?? 15,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        logs: (rateLogs ?? []).filter((l: any) => l.goal_id === g.id).map((l: any) => ({ date: l.date, value: l.value, note: l.note ?? undefined })),
+        logs: (consistencyLogs ?? []).filter((l: any) => l.goal_id === g.id).map((l: any) => ({ date: l.date, made: l.handled, attempts: l.total, note: l.note ?? undefined })),
         createdAt: g.created_at, updatedAt: g.created_at,
       } as RateGoal;
       if (g.type === 'habit') return {
@@ -91,7 +90,7 @@ export async function addGoal(playerId: string, goal: Omit<Goal, 'id' | 'created
   };
   if (goal.type === 'rate') {
     const g = goal as RateGoal;
-    row.unit = g.unit; row.start_value = g.startValue; row.target_value = g.targetValue;
+    row.unit = g.unit; row.target_rate = g.targetRate;
   } else if (goal.type === 'consistency') {
     const g = goal as ConsistencyGoal;
     row.target_rate = g.targetRate;
@@ -107,10 +106,10 @@ export async function deleteGoal(goalId: string): Promise<void> {
   await getSupabase().from('goals').delete().eq('id', goalId);
 }
 
-export async function logRate(goalId: string, value: number, note?: string, date?: string): Promise<void> {
+export async function logRate(goalId: string, made: number, attempts: number, note?: string, date?: string): Promise<void> {
   const d = date ?? new Date().toISOString().split('T')[0];
-  await getSupabase().from('rate_logs')
-    .upsert({ goal_id: goalId, date: d, value, note: note ?? null }, { onConflict: 'goal_id,date' });
+  await getSupabase().from('consistency_logs')
+    .insert({ goal_id: goalId, date: d, handled: made, total: attempts, note: note ?? null });
 }
 
 export async function logPto(goalId: string, date?: string): Promise<void> {

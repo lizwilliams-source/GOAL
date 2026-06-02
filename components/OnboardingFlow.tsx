@@ -22,7 +22,7 @@ const TYPE_INFO: Record<GoalType, { color: string; label: string; desc: string }
 const TEMPLATES = [
   { type: 'consistency' as GoalType, title: 'Handle pricing objection better', description: 'Navigate "how much does it cost" without giving price', emoji: '💬', targetRate: 85 },
   { type: 'consistency' as GoalType, title: 'Mention setup fee on every demo', description: 'Log how many demos you brought up the setup fee on', emoji: '📋', targetRate: 100 },
-  { type: 'rate'        as GoalType, title: 'Improve close rate from 33% to 40%', description: 'Track close rate over the month', emoji: '📈', unit: '%', startValue: 30, targetValue: 40 },
+  { type: 'rate'        as GoalType, title: 'Hit 33% close rate', description: 'Log closes out of total opportunities each session', emoji: '📈', unit: 'close rate', targetRate: 33 },
   { type: 'habit'       as GoalType, title: 'Hit 200 WIN daily', description: '200+ Work Effort metric every working day', emoji: '💼' },
   { type: 'habit'       as GoalType, title: 'Source 25 fresh leads every day', description: 'Self-prospect 25 leads every dat', emoji: '⚡' },
   { type: 'cumulative'  as GoalType, title: 'Set 40 Demos this month', description: 'Set 40 qualified demos this month', emoji: '📞', targetTotal: 40, unit: 'Sets', targetPeriod: 'monthly' },
@@ -34,7 +34,7 @@ const EMOJIS = ['🎯','💼','📈','💬','📋','⚡','🔥','💪','🏆','�
 function mkGoal(tmpl: typeof TEMPLATES[0]): Goal {
   const base = { id: uuidv4(), title: tmpl.title, description: tmpl.description, emoji: tmpl.emoji, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
   if (tmpl.type === 'consistency') return { ...base, type: 'consistency', targetRate: (tmpl as any).targetRate ?? 80, logs: [] };
-  if (tmpl.type === 'rate')        return { ...base, type: 'rate', unit: (tmpl as any).unit ?? '%', startValue: (tmpl as any).startValue ?? 0, targetValue: (tmpl as any).targetValue ?? 100, logs: [] };
+  if (tmpl.type === 'rate')        return { ...base, type: 'rate', unit: (tmpl as any).unit ?? 'rate', targetRate: (tmpl as any).targetRate ?? 15, logs: [] };
   if (tmpl.type === 'cumulative')  return { ...base, type: 'cumulative', targetTotal: (tmpl as any).targetTotal ?? 100, unit: (tmpl as any).unit ?? 'items', targetPeriod: (tmpl as any).targetPeriod ?? 'monthly', logs: [] };
   return { ...base, type: 'habit', logs: [] };
 }
@@ -44,10 +44,8 @@ function CustomForm({ onAdd, onCancel }: { onAdd: (g: Goal) => void; onCancel: (
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [emoji, setEmoji] = useState('🎯');
-  const [startVal, setStartVal] = useState('');
-  const [targetVal, setTargetVal] = useState('');
-  const [unit, setUnit] = useState('%');
-  const [targetRate, setTargetRate] = useState('90');
+  const [unit, setUnit] = useState('');
+  const [targetRate, setTargetRate] = useState('15');
   const [targetTotal, setTargetTotal] = useState('');
   const [cumUnit, setCumUnit] = useState('');
   const [cumPeriod, setCumPeriod] = useState<'monthly' | 'weekly'>('monthly');
@@ -55,7 +53,7 @@ function CustomForm({ onAdd, onCancel }: { onAdd: (g: Goal) => void; onCancel: (
   const submit = () => {
     if (!title.trim()) return;
     const base = { id: uuidv4(), title: title.trim(), description: desc.trim(), emoji, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-    if (type === 'rate')             onAdd({ ...base, type: 'rate', unit, startValue: parseFloat(startVal)||0, targetValue: parseFloat(targetVal)||100, logs: [] });
+    if (type === 'rate')             onAdd({ ...base, type: 'rate', unit: unit||'rate', targetRate: parseInt(targetRate)||15, logs: [] });
     else if (type === 'consistency') onAdd({ ...base, type: 'consistency', targetRate: parseInt(targetRate)||80, logs: [] });
     else if (type === 'cumulative')  onAdd({ ...base, type: 'cumulative', targetTotal: parseFloat(targetTotal)||100, unit: cumUnit||'items', targetPeriod: cumPeriod, logs: [] });
     else                             onAdd({ ...base, type: 'habit', logs: [] });
@@ -80,10 +78,15 @@ function CustomForm({ onAdd, onCancel }: { onAdd: (g: Goal) => void; onCancel: (
         ))}
       </div>
       {type==='rate' && (
-        <div className="grid grid-cols-3 gap-2">
-          <input type="number" placeholder="Start" value={startVal} onChange={e=>setStartVal(e.target.value)} className="w-full"/>
-          <input type="number" placeholder="Target" value={targetVal} onChange={e=>setTargetVal(e.target.value)} className="w-full"/>
-          <input type="text" placeholder="Unit (%)" value={unit} onChange={e=>setUnit(e.target.value)} className="w-full"/>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-xs text-white/40 mb-1 block">Target rate (%)</label>
+            <input type="number" placeholder="e.g. 15" value={targetRate} onChange={e=>setTargetRate(e.target.value)} className="w-full"/>
+          </div>
+          <div>
+            <label className="text-xs text-white/40 mb-1 block">Label</label>
+            <input type="text" placeholder="e.g. set rate" value={unit} onChange={e=>setUnit(e.target.value)} className="w-full"/>
+          </div>
         </div>
       )}
       {type==='consistency' && (

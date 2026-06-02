@@ -5,10 +5,9 @@ export type AnimalKind =
 export interface RateGoal {
   type: 'rate';
   id: string; title: string; description: string; emoji: string;
-  unit: string;
-  startValue: number;
-  targetValue: number;
-  logs: { date: string; value: number; note?: string }[];
+  unit: string;        // label, e.g. "set rate", "close rate"
+  targetRate: number;  // target %, e.g. 15 for 15%
+  logs: { date: string; made: number; attempts: number; note?: string }[];
   createdAt: string; updatedAt: string;
 }
 

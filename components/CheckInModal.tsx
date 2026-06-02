@@ -6,7 +6,7 @@ import AnimalAvatarImg from './AnimalAvatar';
 interface Props {
   player: Player;
   goal: Goal;
-  onSubmitRate: (value: number, note?: string, date?: string) => void;
+  onSubmitRate: (made: number, attempts: number, note?: string, date?: string) => void;
   onSubmitHabit: (completed: boolean, note?: string, date?: string) => void;
   onSubmitPto: (date?: string) => void;
   onSubmitConsistency: (handled: number, total: number, note?: string, date?: string) => void;
@@ -121,49 +121,66 @@ function CalendarPicker({ goal, selected, onChange }: { goal: Goal; selected: st
 }
 
 // ---- RATE check-in ----
-function RateCheckIn({ goal, onSubmit }: { goal: RateGoal; onSubmit: (v: number, n?: string) => void }) {
-  const [value, setValue] = useState('');
+function RateCheckIn({ goal, onSubmit }: { goal: RateGoal; onSubmit: (made: number, attempts: number, n?: string) => void }) {
+  const [made, setMade] = useState('');
+  const [attempts, setAttempts] = useState('');
   const [note, setNote] = useState('');
-  const { current, delta, progressPct, history } = getRateProgress(goal);
-  const miniHistory = history.slice(-6);
-  const allVals = [goal.startValue, goal.targetValue, ...miniHistory.map(h => h.value)];
-  const minV = Math.min(...allVals), maxV = Math.max(...allVals), range = maxV - minV || 1;
+  const { totalMade, totalAttempts, rate, progressPct, recentLogs } = getRateProgress(goal);
+  const m = parseInt(made) || 0, a = parseInt(attempts) || 0;
+  const sessionRate = a > 0 ? Math.round((m / a) * 100) : null;
 
   return (
     <div>
-      <div className="mb-4 p-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.3)' }}>
-        <div className="flex items-baseline gap-2 mb-1">
-          <span className="text-2xl font-black" style={{ fontFamily: 'Black Han Sans', color: '#60a5fa' }}>
-            {current !== null ? `${current}${goal.unit}` : '—'}
-          </span>
-          {delta !== null && (
-            <span className="text-sm font-bold" style={{ color: delta >= 0 ? '#4ade80' : '#f87171' }}>
-              {delta >= 0 ? '▲' : '▼'} {Math.abs(delta)}{goal.unit} since start
-            </span>
+      {totalAttempts > 0 && (
+        <div className="mb-4 p-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.3)' }}>
+          <div className="flex items-baseline gap-2 mb-1">
+            <span className="text-2xl font-black" style={{ fontFamily: 'Black Han Sans', color: '#60a5fa' }}>{rate}%</span>
+            <span className="text-xs text-white/40">{goal.unit}</span>
+            <span className="text-[10px] text-white/30 ml-auto">{totalMade}/{totalAttempts} total</span>
+          </div>
+          <div className="flex h-2 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.4)' }}>
+            <div className="h-full rounded-l-full transition-all duration-700" style={{ width: `${rate}%`, background: rate >= goal.targetRate ? '#f9c923' : '#60a5fa' }}/>
+            <div className="h-full flex-1 rounded-r-full" style={{ background: 'rgba(220,38,38,0.3)' }}/>
+          </div>
+          <div className="flex justify-between text-[10px] text-white/30 mt-1">
+            <span>✅ {totalMade} made</span><span>Target: {goal.targetRate}%</span><span>❌ {totalAttempts - totalMade} missed</span>
+          </div>
+          {recentLogs.length > 0 && (
+            <div className="mt-2 space-y-0.5 border-t border-white/8 pt-2">
+              {recentLogs.map((l, i) => (
+                <div key={i} className="flex items-center gap-2 text-[10px] text-white/40">
+                  <span>{new Date(l.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                  <span className="font-bold text-white/60">{l.made}/{l.attempts}</span>
+                  <span style={{ color: Math.round((l.made/l.attempts)*100) >= goal.targetRate ? '#4ade80' : '#f87171' }}>{Math.round((l.made/l.attempts)*100)}%</span>
+                  {l.note && <span className="truncate">&quot;{l.note}&quot;</span>}
+                </div>
+              ))}
+            </div>
           )}
         </div>
-        <div className="flex items-center justify-between text-[10px] text-white/35 mb-1.5">
-          <span>Start: {goal.startValue}{goal.unit}</span><span>Target: {goal.targetValue}{goal.unit}</span>
+      )}
+      <label className="text-xs text-white/50 uppercase tracking-wider mb-3 block">Log this session</label>
+      <div className="grid grid-cols-2 gap-3 mb-2">
+        <div>
+          <div className="text-xs text-white/40 mb-1.5">Made ✅</div>
+          <input type="number" min="0" placeholder="e.g. 3" value={made} onChange={e => setMade(e.target.value)} className="w-full" autoFocus/>
         </div>
-        {miniHistory.length > 1 && (
-          <svg width="100%" height="32" viewBox="0 0 200 32" preserveAspectRatio="none">
-            <polyline points={miniHistory.map((h, i) => `${(i/(miniHistory.length-1))*190+5},${28-((h.value-minV)/range)*24}`).join(' ')}
-              fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            {miniHistory.map((h, i) => <circle key={i} cx={(i/(miniHistory.length-1))*190+5} cy={28-((h.value-minV)/range)*24} r="2.5" fill="#60a5fa"/>)}
-          </svg>
-        )}
-        <div className="h-1.5 rounded-full overflow-hidden mt-1" style={{ background: 'rgba(0,0,0,0.4)' }}>
-          <div className="h-full rounded-full transition-all duration-700" style={{ width: `${progressPct}%`, background: progressPct >= 100 ? '#f9c923' : '#60a5fa' }}/>
+        <div>
+          <div className="text-xs text-white/40 mb-1.5">Total attempts</div>
+          <input type="number" min="0" placeholder="e.g. 20" value={attempts} onChange={e => setAttempts(e.target.value)} className="w-full"/>
         </div>
       </div>
-      <label className="text-xs text-white/50 uppercase tracking-wider mb-2 block">Log {goal.unit ? `${goal.unit} ` : ''}value</label>
-      <input type="number" step="any" placeholder={`e.g. ${goal.targetValue}`} value={value}
-        onChange={e => setValue(e.target.value)} className="w-full mb-3" autoFocus/>
+      {sessionRate !== null && a > 0 && (
+        <div className="text-center mb-3 py-2 rounded-lg text-sm font-bold"
+          style={{ background: 'rgba(0,0,0,0.25)', color: sessionRate >= goal.targetRate ? '#4ade80' : '#fb923c' }}>
+          This session: {m}/{a} = {sessionRate}%{sessionRate >= goal.targetRate ? ' 🔥 Above target' : ` (target ${goal.targetRate}%)`}
+        </div>
+      )}
       <textarea placeholder="Note (optional)" value={note} onChange={e => setNote(e.target.value)} className="w-full resize-none mb-4" rows={2}/>
-      <button onClick={() => { if (value) onSubmit(parseFloat(value), note || undefined); }} disabled={!value}
+      <button onClick={() => { if (m > 0 && a > 0 && m <= a) onSubmit(m, a, note || undefined); }} disabled={!(m > 0 && a > 0 && m <= a)}
         className="w-full py-2.5 rounded-xl font-black text-sm disabled:opacity-40 hover:scale-105 transition-transform"
         style={{ background: '#f9c923', color: '#1a1a1a', fontFamily: 'Oswald' }}>
-        ⚽ LOG RATE
+        ⚽ LOG SESSION
       </button>
     </div>
   );
@@ -362,7 +379,7 @@ export default function CheckInModal({ player, goal, onSubmitRate, onSubmitHabit
         )}
 
         {goal.type === 'rate' && (
-          <RateCheckIn goal={goal} onSubmit={(v, n) => { onSubmitRate(v, n, selectedDate); setDone(true); }}/>
+          <RateCheckIn goal={goal} onSubmit={(made, attempts, n) => { onSubmitRate(made, attempts, n, selectedDate); setDone(true); }}/>
         )}
         {goal.type === 'habit' && (
           <HabitCheckIn goal={goal} date={selectedDate}

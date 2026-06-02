@@ -202,7 +202,7 @@ export default function Home() {
       {checkIn && (
         <CheckInModal
           player={checkIn.player} goal={checkIn.goal}
-          onSubmitRate={(v,n,d) => handleCheckIn(() => sb.logRate(checkIn.goal.id, v, n, d))}
+          onSubmitRate={(made,attempts,n,d) => handleCheckIn(() => sb.logRate(checkIn.goal.id, made, attempts, n, d))}
           onSubmitHabit={(c,n,d) => handleCheckIn(() => sb.logHabit(checkIn.goal.id, c, n, d))}
           onSubmitPto={(d) => handleCheckIn(() => sb.logPto(checkIn.goal.id, d))}
           onSubmitConsistency={(h,t,n,d) => handleCheckIn(() => sb.logConsistency(checkIn.goal.id, h, t, n, d))}

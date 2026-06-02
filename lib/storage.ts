@@ -110,16 +110,15 @@ export function logCumulative(data: AppData, playerId: string, goalId: string, a
 // --- Progress calculations ---
 
 export function getRateProgress(goal: RateGoal): {
-  current: number | null; delta: number | null; progressPct: number;
-  history: { date: string; value: number }[];
+  totalMade: number; totalAttempts: number; rate: number; progressPct: number;
+  recentLogs: typeof goal.logs;
 } {
-  if (goal.logs.length === 0) return { current: null, delta: null, progressPct: 0, history: [] };
-  const sorted = [...goal.logs].sort((a, b) => a.date.localeCompare(b.date));
-  const current = sorted[sorted.length - 1].value;
-  const delta = current - goal.startValue;
-  const range = goal.targetValue - goal.startValue;
-  const progressPct = range === 0 ? 100 : Math.min(100, Math.max(0, Math.round(((current - goal.startValue) / range) * 100)));
-  return { current, delta, progressPct, history: sorted.map(l => ({ date: l.date, value: l.value })) };
+  const totalMade = goal.logs.reduce((s, l) => s + l.made, 0);
+  const totalAttempts = goal.logs.reduce((s, l) => s + l.attempts, 0);
+  const rate = totalAttempts === 0 ? 0 : Math.round((totalMade / totalAttempts) * 100);
+  const progressPct = goal.targetRate === 0 ? 100 : Math.min(100, Math.round((rate / goal.targetRate) * 100));
+  const recentLogs = [...goal.logs].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+  return { totalMade, totalAttempts, rate, progressPct, recentLogs };
 }
 
 function isWeekend(dateStr: string): boolean {

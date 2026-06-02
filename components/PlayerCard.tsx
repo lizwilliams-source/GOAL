@@ -27,10 +27,7 @@ function Bar({ pct, color }: { pct: number; color?: string }) {
 
 // ---- Rate goal display ----
 function RateDisplay({ goal, onLog, onDelete }: { goal: RateGoal; onLog: () => void; onDelete: () => void }) {
-  const { current, delta, progressPct, history } = getRateProgress(goal);
-  const miniH = history.slice(-6);
-  const allV = [goal.startValue, goal.targetValue, ...miniH.map(h => h.value)];
-  const minV = Math.min(...allV), maxV = Math.max(...allV), rng = maxV - minV || 1;
+  const { totalMade, totalAttempts, rate, progressPct, recentLogs } = getRateProgress(goal);
   const complete = progressPct >= 100;
 
   return (
@@ -41,38 +38,39 @@ function RateDisplay({ goal, onLog, onDelete }: { goal: RateGoal; onLog: () => v
         <div className="flex-1 min-w-0">
           <div className="text-xs font-bold text-white leading-snug">{goal.title}</div>
           <div className="text-[11px] text-white/40 mt-0.5">{goal.description}</div>
-          <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider" style={{ background: 'rgba(96,165,250,0.12)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.2)' }}>📈 Rate</span>
+          <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider" style={{ background: 'rgba(96,165,250,0.12)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.2)' }}>📈 {goal.unit}</span>
         </div>
         <div className="flex gap-1 flex-shrink-0">
           <button onClick={onLog} className="text-xs px-3 py-2 rounded-lg font-bold active:scale-95 transition-transform" style={{ background: '#f9c923', color: '#1a1a1a' }}>+ Log</button>
           <button onClick={onDelete} className="text-sm w-9 h-9 flex items-center justify-center rounded-lg text-white/30 hover:text-red-400 active:text-red-400 transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}>✕</button>
         </div>
       </div>
-      {/* Current value + delta */}
-      <div className="flex items-baseline gap-2 mb-2">
-        <span className="text-xl font-black" style={{ fontFamily: 'Black Han Sans', color: '#60a5fa' }}>
-          {current !== null ? `${current}${goal.unit}` : '—'}
+      <div className="flex items-baseline gap-2 mb-1.5">
+        <span className="text-xl font-black" style={{ fontFamily: 'Black Han Sans', color: rate >= goal.targetRate ? '#f9c923' : '#60a5fa' }}>
+          {totalAttempts > 0 ? `${rate}%` : '—'}
         </span>
-        {delta !== null && (
-          <span className="text-xs font-bold" style={{ color: delta >= 0 ? '#4ade80' : '#f87171' }}>
-            {delta >= 0 ? '▲' : '▼'}{Math.abs(delta)}{goal.unit}
-          </span>
-        )}
-        <span className="text-[10px] text-white/30 ml-auto">→ {goal.targetValue}{goal.unit}</span>
+        <span className="text-xs text-white/40">{goal.unit}</span>
+        <span className="text-[10px] text-white/30 ml-auto">{totalMade}/{totalAttempts} total</span>
       </div>
-      {/* Sparkline */}
-      {miniH.length > 1 && (
-        <svg width="100%" height="28" viewBox="0 0 200 28" preserveAspectRatio="none" className="mb-2">
-          <polyline
-            points={miniH.map((h, i) => `${(i/(miniH.length-1))*192+4},${24-((h.value-minV)/rng)*20}`).join(' ')}
-            fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          {miniH.map((h, i) => (
-            <circle key={i} cx={(i/(miniH.length-1))*192+4} cy={24-((h.value-minV)/rng)*20} r="2.5" fill="#60a5fa"/>
-          ))}
-        </svg>
-      )}
-      <div className="flex justify-between text-[10px] text-white/30 mb-1">
-        <span>Start: {goal.startValue}{goal.unit}</span>
+      <div className="flex h-2.5 rounded-full overflow-hidden mb-1" style={{ background: 'rgba(0,0,0,0.4)' }}>
+        <div className="h-full rounded-l-full transition-all duration-700" style={{ width: `${rate}%`, background: rate >= goal.targetRate ? '#f9c923' : '#60a5fa' }}/>
+        <div className="h-full flex-1 rounded-r-full" style={{ background: 'rgba(220,38,38,0.3)' }}/>
+      </div>
+      <div className="flex justify-between text-[10px] text-white/30 mb-1.5">
+        <span>✅ {totalMade} made</span><span>Target: {goal.targetRate}%</span><span>❌ {totalAttempts - totalMade} missed</span>
+      </div>
+      {recentLogs.slice(0, 3).map((l, i) => {
+        const sr = l.attempts > 0 ? Math.round((l.made / l.attempts) * 100) : 0;
+        return (
+          <div key={i} className="flex items-center gap-2 text-[10px] text-white/35">
+            <span>{new Date(l.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+            <span className="font-bold text-white/55">{l.made}/{l.attempts}</span>
+            <span style={{ color: sr >= goal.targetRate ? '#4ade80' : '#f87171' }}>{sr}%</span>
+          </div>
+        );
+      })}
+      <div className="mt-2 flex justify-between text-[10px] text-white/30 mb-1">
+        <span>Progress to {goal.targetRate}% target</span>
         <span className="font-bold" style={{ color: complete ? '#f9c923' : 'rgba(255,255,255,0.6)' }}>{progressPct}%</span>
       </div>
       <Bar pct={progressPct}/>

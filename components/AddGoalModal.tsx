@@ -24,10 +24,8 @@ export default function AddGoalModal({ player, onAdd, onClose }: Props) {
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [emoji, setEmoji] = useState('🎯');
-  const [startVal, setStartVal] = useState('');
-  const [targetVal, setTargetVal] = useState('');
-  const [unit, setUnit] = useState('%');
-  const [targetRate, setTargetRate] = useState('90');
+  const [unit, setUnit] = useState('');
+  const [targetRate, setTargetRate] = useState('15');
   const [targetTotal, setTargetTotal] = useState('');
   const [cumUnit, setCumUnit] = useState('');
   const [cumPeriod, setCumPeriod] = useState<'monthly' | 'weekly'>('monthly');
@@ -35,7 +33,7 @@ export default function AddGoalModal({ player, onAdd, onClose }: Props) {
   const submit = () => {
     if (!title.trim()) return;
     if (type === 'rate') {
-      onAdd({ type: 'rate', title: title.trim(), description: desc.trim(), emoji, unit, startValue: parseFloat(startVal)||0, targetValue: parseFloat(targetVal)||100, logs: [] });
+      onAdd({ type: 'rate', title: title.trim(), description: desc.trim(), emoji, unit: unit||'rate', targetRate: parseInt(targetRate)||15, logs: [] });
     } else if (type === 'consistency') {
       onAdd({ type: 'consistency', title: title.trim(), description: desc.trim(), emoji, targetRate: parseInt(targetRate)||80, logs: [] });
     } else if (type === 'cumulative') {
@@ -88,10 +86,15 @@ export default function AddGoalModal({ player, onAdd, onClose }: Props) {
         </div>
 
         {type==='rate' && (
-          <div className="grid grid-cols-3 gap-2 mb-3">
-            <input type="number" placeholder="Start" value={startVal} onChange={e=>setStartVal(e.target.value)} className="w-full"/>
-            <input type="number" placeholder="Target" value={targetVal} onChange={e=>setTargetVal(e.target.value)} className="w-full"/>
-            <input type="text" placeholder="Unit (%)" value={unit} onChange={e=>setUnit(e.target.value)} className="w-full"/>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <div>
+              <label className="text-xs text-white/40 mb-1 block">Target rate (%)</label>
+              <input type="number" placeholder="e.g. 15" value={targetRate} onChange={e=>setTargetRate(e.target.value)} className="w-full"/>
+            </div>
+            <div>
+              <label className="text-xs text-white/40 mb-1 block">Label</label>
+              <input type="text" placeholder="e.g. set rate" value={unit} onChange={e=>setUnit(e.target.value)} className="w-full"/>
+            </div>
           </div>
         )}
         {type==='consistency' && (

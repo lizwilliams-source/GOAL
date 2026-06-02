@@ -95,7 +95,6 @@ export default function Home() {
           <div className="max-w-2xl mx-auto px-4 py-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2.5">
-                <SoccerBall size={34}/>
                 <div>
                   <h1 className="text-2xl text-yellow-400 leading-none tracking-widest" style={{ fontFamily:'Black Han Sans', textShadow:'0 1px 10px rgba(249,201,35,0.35)' }}>
                     <span className="sm:hidden">GOOOOOAL</span>

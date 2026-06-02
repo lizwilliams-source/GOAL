@@ -1,4 +1,4 @@
-import { AppData, Player, Goal, RateGoal, HabitGoal, ConsistencyGoal } from '../types';
+import { AppData, Player, Goal, RateGoal, HabitGoal, ConsistencyGoal, CumulativeGoal } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
 const KEY = 'gooooal_v4';
@@ -94,6 +94,19 @@ export function logConsistency(data: AppData, playerId: string, goalId: string, 
   return updatePlayer(data, playerId, { goals });
 }
 
+// Log a cumulative amount (each entry adds to the running total)
+export function logCumulative(data: AppData, playerId: string, goalId: string, amount: number, note?: string): AppData {
+  const player = data.players.find(p => p.id === playerId);
+  if (!player) return data;
+  const today = new Date().toISOString().split('T')[0];
+  const goals = player.goals.map(g => {
+    if (g.id !== goalId || g.type !== 'cumulative') return g;
+    const logs = [...g.logs, { date: today, amount, note }];
+    return { ...g, logs, updatedAt: new Date().toISOString() } as CumulativeGoal;
+  });
+  return updatePlayer(data, playerId, { goals });
+}
+
 // --- Progress calculations ---
 
 export function getRateProgress(goal: RateGoal): {
@@ -132,10 +145,19 @@ export function getConsistencyProgress(goal: ConsistencyGoal): {
   return { totalHandled, totalInstances, rate, progressPct, recentLogs };
 }
 
+export function getCumulativeProgress(goal: CumulativeGoal): {
+  total: number; progressPct: number;
+} {
+  const total = goal.logs.reduce((s, l) => s + l.amount, 0);
+  const progressPct = goal.targetTotal === 0 ? 100 : Math.min(100, Math.round((total / goal.targetTotal) * 100));
+  return { total, progressPct };
+}
+
 export function getGoalProgress(goal: Goal): number {
   if (goal.type === 'rate') return getRateProgress(goal).progressPct;
   if (goal.type === 'habit') return getHabitProgress(goal).pct;
   if (goal.type === 'consistency') return getConsistencyProgress(goal).progressPct;
+  if (goal.type === 'cumulative') return getCumulativeProgress(goal).progressPct;
   return 0;
 }
 

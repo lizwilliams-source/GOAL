@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Goal, RateGoal, HabitGoal, ConsistencyGoal, Player } from '../types';
-import { getRateProgress, getHabitProgress, getConsistencyProgress } from '../lib/storage';
+import { Goal, RateGoal, HabitGoal, ConsistencyGoal, CumulativeGoal, Player } from '../types';
+import { getRateProgress, getHabitProgress, getConsistencyProgress, getCumulativeProgress } from '../lib/storage';
 import AnimalAvatarImg from './AnimalAvatar';
 
 interface Props {
@@ -9,6 +9,7 @@ interface Props {
   onSubmitRate: (value: number, note?: string) => void;
   onSubmitHabit: (completed: boolean, note?: string) => void;
   onSubmitConsistency: (handled: number, total: number, note?: string) => void;
+  onSubmitCumulative: (amount: number, note?: string) => void;
   onClose: () => void;
 }
 
@@ -138,6 +139,40 @@ function HabitCheckIn({ goal, onSubmit }: { goal: HabitGoal; onSubmit: (c: boole
   );
 }
 
+// ---- CUMULATIVE check-in ----
+function CumulativeCheckIn({ goal, onSubmit }: { goal: CumulativeGoal; onSubmit: (a: number, n?: string) => void }) {
+  const [amount, setAmount] = useState('');
+  const [note, setNote] = useState('');
+  const { total, progressPct } = getCumulativeProgress(goal);
+
+  return (
+    <div>
+      {total > 0 && (
+        <div className="mb-4 p-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.3)' }}>
+          <div className="flex items-baseline justify-between mb-1">
+            <span className="text-2xl font-black" style={{ fontFamily: 'Black Han Sans', color: '#a78bfa' }}>{total} {goal.unit}</span>
+            <span className="text-xs text-white/40">of {goal.targetTotal} target</span>
+          </div>
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.4)' }}>
+            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${progressPct}%`, background: progressPct >= 100 ? '#f9c923' : '#a78bfa' }}/>
+          </div>
+          <div className="text-[10px] text-white/35 mt-1 text-right">{progressPct}% to goal</div>
+        </div>
+      )}
+      <label className="text-xs text-white/50 uppercase tracking-wider mb-2 block">Log {goal.unit}</label>
+      <input type="number" step="any" min="0" placeholder={`e.g. 1`} value={amount}
+        onChange={e => setAmount(e.target.value)} className="w-full mb-3" autoFocus/>
+      <textarea placeholder="Note (optional)" value={note} onChange={e => setNote(e.target.value)} className="w-full resize-none mb-4" rows={2}/>
+      <button onClick={() => { if (amount) onSubmit(parseFloat(amount), note || undefined); }}
+        disabled={!amount}
+        className="w-full py-2.5 rounded-xl font-black text-sm disabled:opacity-40 hover:scale-105 transition-transform"
+        style={{ background: '#f9c923', color: '#1a1a1a', fontFamily: 'Oswald' }}>
+        ⚽ LOG {goal.unit.toUpperCase()}
+      </button>
+    </div>
+  );
+}
+
 // ---- CONSISTENCY check-in ----
 function ConsistencyCheckIn({ goal, onSubmit }: { goal: ConsistencyGoal; onSubmit: (h: number, t: number, n?: string) => void }) {
   const [handled, setHandled] = useState('');
@@ -223,7 +258,7 @@ function ConsistencyCheckIn({ goal, onSubmit }: { goal: ConsistencyGoal; onSubmi
   );
 }
 
-export default function CheckInModal({ player, goal, onSubmitRate, onSubmitHabit, onSubmitConsistency, onClose }: Props) {
+export default function CheckInModal({ player, goal, onSubmitRate, onSubmitHabit, onSubmitConsistency, onSubmitCumulative, onClose }: Props) {
   const [done, setDone] = useState(false);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -257,6 +292,9 @@ export default function CheckInModal({ player, goal, onSubmitRate, onSubmitHabit
         )}
         {goal.type === 'consistency' && (
           <ConsistencyCheckIn goal={goal} onSubmit={wrap((h: number, t: number, n?: string) => onSubmitConsistency(h, t, n))}/>
+        )}
+        {goal.type === 'cumulative' && (
+          <CumulativeCheckIn goal={goal} onSubmit={wrap((a: number, n?: string) => onSubmitCumulative(a, n))}/>
         )}
       </div>
     </div>

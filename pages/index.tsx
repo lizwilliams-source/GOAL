@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { AppData, Player, Goal } from '../types';
-import { load, save, addPlayer, deleteGoal, logRate, logHabit, logConsistency, getPlayerOverall, addGoalToPlayer, removePlayer } from '../lib/storage';
+import * as sb from '../lib/supabaseStorage';
+import { getPlayerOverall } from '../lib/storage';
 import OnboardingFlow from '../components/OnboardingFlow';
 import PlayerCard from '../components/PlayerCard';
 import CheckInModal from '../components/CheckInModal';
@@ -17,36 +18,28 @@ export default function Home() {
   const [celebrating, setCelebrating] = useState(false);
   const [addGoalPlayer, setAddGoalPlayer] = useState<Player | null>(null);
 
-  useEffect(() => { setData(load()); }, []);
-  const persist = (d: AppData) => { setData(d); save(d); };
+  const refresh = async () => { setData(await sb.loadData()); };
 
-  const handleOnboardComplete = (playerData: Omit<Player, 'id' | 'createdAt'>) => {
-    if (!data) return;
-    const newData = addPlayer(data, playerData);
-    persist(newData);
+  useEffect(() => { refresh(); }, []);
+
+  const handleOnboardComplete = async (playerData: Omit<Player, 'id' | 'createdAt'>) => {
+    const newPlayerId = await sb.createPlayer(playerData);
+    const newData = await sb.loadData();
+    setData(newData);
     setShowOnboarding(false);
-    setExpandedId(newData.players[newData.players.length - 1].id);
+    setExpandedId(newPlayerId);
   };
 
-  const handleCheckInSubmit = (
-    rateValue?: number, habitCompleted?: boolean,
-    consistencyHandled?: number, consistencyTotal?: number,
-    note?: string
-  ) => {
-    if (!checkIn || !data) return;
-    const { player, goal } = checkIn;
-    const prevOverall = getPlayerOverall(player);
-    let newData = data;
-    if (goal.type === 'rate' && rateValue !== undefined)
-      newData = logRate(newData, player.id, goal.id, rateValue, note);
-    if (goal.type === 'habit' && habitCompleted !== undefined)
-      newData = logHabit(newData, player.id, goal.id, habitCompleted, note);
-    if (goal.type === 'consistency' && consistencyHandled !== undefined && consistencyTotal !== undefined)
-      newData = logConsistency(newData, player.id, goal.id, consistencyHandled, consistencyTotal, note);
-    persist(newData);
+  const handleCheckIn = async (fn: () => Promise<void>) => {
+    if (!checkIn) return;
+    const prevOverall = getPlayerOverall(checkIn.player);
+    const playerId = checkIn.player.id;
+    await fn();
+    const newData = await sb.loadData();
+    setData(newData);
     setCheckIn(null);
-    const updatedPlayer = newData.players.find(p => p.id === player.id)!;
-    if (getPlayerOverall(updatedPlayer) >= 100 && prevOverall < 100) {
+    const updated = newData.players.find(p => p.id === playerId);
+    if (updated && getPlayerOverall(updated) >= 100 && prevOverall < 100) {
       setCelebrating(true);
       setTimeout(() => setCelebrating(false), 3000);
     }
@@ -128,7 +121,7 @@ export default function Home() {
             <div className="text-center py-16 rounded-2xl" style={{ background:'rgba(0,0,0,0.25)', border:'2px dashed rgba(255,255,255,0.1)' }}>
               <div className="text-6xl mb-3">⚽</div>
               <div className="text-xl font-black text-white/60 mb-1" style={{ fontFamily:'Oswald' }}>No players yet</div>
-              <p className="text-white/30 text-sm mb-6 max-w-xs mx-auto">Add your team and set everyone's goals.</p>
+              <p className="text-white/30 text-sm mb-6 max-w-xs mx-auto">Add your team and set everyone&apos;s goals.</p>
               <button onClick={() => setShowOnboarding(true)}
                 className="px-8 py-3 rounded-xl font-black text-sm hover:scale-105 transition-transform"
                 style={{ background:'#f9c923', color:'#1a1a1a', fontFamily:'Oswald', letterSpacing:'0.05em' }}>
@@ -161,8 +154,8 @@ export default function Home() {
                   <PlayerCard key={player.id} player={player}
                     onCheckIn={(p,g) => setCheckIn({ player:p, goal:g })}
                     onAddGoal={(p) => setAddGoalPlayer(p)}
-                    onDeleteGoal={(p,gid) => persist(deleteGoal(data,p.id,gid))}
-                    onDeletePlayer={(p) => persist(removePlayer(data, p.id))}
+                    onDeleteGoal={async (p, gid) => { await sb.deleteGoal(gid); await refresh(); }}
+                    onDeletePlayer={async (p) => { await sb.deletePlayer(p.id); await refresh(); }}
                     expanded={expandedId===player.id}
                     onToggle={() => setExpandedId(expandedId===player.id?null:player.id)}/>
                 ))}
@@ -194,16 +187,17 @@ export default function Home() {
       {checkIn && (
         <CheckInModal
           player={checkIn.player} goal={checkIn.goal}
-          onSubmitRate={(v,n) => handleCheckInSubmit(v,undefined,undefined,undefined,n)}
-          onSubmitHabit={(c,n) => handleCheckInSubmit(undefined,c,undefined,undefined,n)}
-          onSubmitConsistency={(h,t,n) => handleCheckInSubmit(undefined,undefined,h,t,n)}
+          onSubmitRate={(v,n) => handleCheckIn(() => sb.logRate(checkIn.goal.id, v, n))}
+          onSubmitHabit={(c,n) => handleCheckIn(() => sb.logHabit(checkIn.goal.id, c, n))}
+          onSubmitConsistency={(h,t,n) => handleCheckIn(() => sb.logConsistency(checkIn.goal.id, h, t, n))}
+          onSubmitCumulative={(a,n) => handleCheckIn(() => sb.logCumulative(checkIn.goal.id, a, n))}
           onClose={() => setCheckIn(null)}/>
       )}
 
       {addGoalPlayer && data && (
         <AddGoalModal
           player={addGoalPlayer}
-          onAdd={(goal) => { persist(addGoalToPlayer(data, addGoalPlayer.id, goal)); setAddGoalPlayer(null); }}
+          onAdd={async (goal) => { await sb.addGoal(addGoalPlayer.id, goal); await refresh(); setAddGoalPlayer(null); }}
           onClose={() => setAddGoalPlayer(null)}/>
       )}
     </>

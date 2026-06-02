@@ -1,6 +1,6 @@
 import React from 'react';
-import { Player, Goal, RateGoal, HabitGoal, ConsistencyGoal } from '../types';
-import { getGoalProgress, getPlayerOverall, getRateProgress, getHabitProgress, getConsistencyProgress } from '../lib/storage';
+import { Player, Goal, RateGoal, HabitGoal, ConsistencyGoal, CumulativeGoal } from '../types';
+import { getGoalProgress, getPlayerOverall, getRateProgress, getHabitProgress, getConsistencyProgress, getCumulativeProgress } from '../lib/storage';
 import AnimalAvatarImg from './AnimalAvatar';
 
 interface Props {
@@ -131,6 +131,43 @@ function HabitDisplay({ goal, onLog, onDelete }: { goal: HabitGoal; onLog: () =>
   );
 }
 
+// ---- Cumulative goal display ----
+function CumulativeDisplay({ goal, onLog, onDelete }: { goal: CumulativeGoal; onLog: () => void; onDelete: () => void }) {
+  const { total, progressPct } = getCumulativeProgress(goal);
+  const complete = progressPct >= 100;
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayTotal = goal.logs.filter(l => l.date === todayStr).reduce((s, l) => s + l.amount, 0);
+
+  return (
+    <div className="rounded-xl p-3" style={{ background: 'rgba(0,0,0,0.3)', border: `1px solid ${complete ? 'rgba(249,201,35,0.35)' : 'rgba(255,255,255,0.07)'}` }}>
+      {complete && <div className="text-[9px] font-black text-yellow-400 tracking-widest mb-1.5">⚽ GOAL REACHED!</div>}
+      <div className="flex items-start gap-2 mb-2">
+        <span className="text-xl flex-shrink-0">{goal.emoji}</span>
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-bold text-white leading-snug">{goal.title}</div>
+          <div className="text-[11px] text-white/40 mt-0.5">{goal.description}</div>
+          <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider" style={{ background: 'rgba(167,139,250,0.1)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.2)' }}>🔢 Cumulative</span>
+        </div>
+        <div className="flex gap-1 flex-shrink-0">
+          <button onClick={onLog} className="text-[10px] px-2 py-1 rounded font-bold hover:scale-105 transition-transform" style={{ background: '#f9c923', color: '#1a1a1a' }}>+ Log</button>
+          <button onClick={onDelete} className="text-[10px] px-2 py-1 rounded text-white/30 hover:text-red-400 transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}>✕</button>
+        </div>
+      </div>
+      <div className="flex items-baseline gap-2 mb-2">
+        <span className="text-xl font-black" style={{ fontFamily: 'Black Han Sans', color: '#a78bfa' }}>{total}</span>
+        <span className="text-xs text-white/40">{goal.unit}</span>
+        <span className="text-[10px] text-white/30 ml-auto">→ {goal.targetTotal} target</span>
+      </div>
+      {todayTotal > 0 && <div className="text-[10px] text-white/30 mb-1.5">Today: +{todayTotal} {goal.unit}</div>}
+      <div className="flex justify-between text-[10px] text-white/30 mb-1">
+        <span>0</span>
+        <span className="font-bold" style={{ color: complete ? '#f9c923' : 'rgba(255,255,255,0.6)' }}>{progressPct}%</span>
+      </div>
+      <Bar pct={progressPct} color="#a78bfa"/>
+    </div>
+  );
+}
+
 // ---- Consistency goal display ----
 function ConsistencyDisplay({ goal, onLog, onDelete }: { goal: ConsistencyGoal; onLog: () => void; onDelete: () => void }) {
   const { totalHandled, totalInstances, rate, progressPct, recentLogs } = getConsistencyProgress(goal);
@@ -234,6 +271,7 @@ export default function PlayerCard({
               if (goal.type === 'rate')        return <RateDisplay        key={goal.id} goal={goal} {...props}/>;
               if (goal.type === 'habit')       return <HabitDisplay       key={goal.id} goal={goal} {...props}/>;
               if (goal.type === 'consistency') return <ConsistencyDisplay key={goal.id} goal={goal} {...props}/>;
+              if (goal.type === 'cumulative') return <CumulativeDisplay  key={goal.id} goal={goal} {...props}/>;
             })
           }
           {player.goals.length < 2 && (

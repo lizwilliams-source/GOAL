@@ -27,6 +27,15 @@ export interface ConsistencyGoal {
   createdAt: string; updatedAt: string;
 }
 
+export interface CumulativeGoal {
+  type: 'cumulative';
+  id: string; title: string; description: string; emoji: string;
+  unit: string;
+  targetTotal: number;
+  logs: { date: string; amount: number; note?: string }[];
+  createdAt: string; updatedAt: string;
+}
+
 export type Goal = RateGoal | HabitGoal | ConsistencyGoal | CumulativeGoal;
 
 export interface Player {

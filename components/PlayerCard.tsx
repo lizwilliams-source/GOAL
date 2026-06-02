@@ -242,12 +242,26 @@ export default function PlayerCard({
   const overall = getPlayerOverall(player);
   const complete = overall >= 100;
   const cumulativeGoals = player.goals.filter((g): g is CumulativeGoal => g.type === 'cumulative');
-  const allCumulativeOnPace = cumulativeGoals.length > 0 && cumulativeGoals.every(g => getCumulativeProgress(g).onPace);
+  const cumulativeProgresses = cumulativeGoals.map(g => getCumulativeProgress(g));
+  const allCumulativeOnPace = cumulativeGoals.length > 0 && cumulativeProgresses.every(p => p.onPace);
   const headerBarColor = complete
     ? '#f9c923'
     : cumulativeGoals.length > 0
       ? allCumulativeOnPace ? '#4ade80' : '#a78bfa'
       : undefined;
+
+  // Label shown in collapsed header — avoid misleading raw % for cumulative goals
+  const headerLabel = (() => {
+    if (complete) return { text: `${overall}%`, color: '#f9c923' };
+    if (cumulativeGoals.length === 0) return { text: `${overall}%`, color: 'rgba(255,255,255,0.7)' };
+    if (allCumulativeOnPace) return { text: 'On pace', color: '#4ade80' };
+    // Show most behind goal's count
+    const mostBehind = cumulativeGoals.reduce((worst, g, i) =>
+      cumulativeProgresses[i].progressPct < (worst ? cumulativeProgresses[cumulativeGoals.indexOf(worst)].progressPct : 101) ? g : worst
+    , cumulativeGoals[0]);
+    const prog = getCumulativeProgress(mostBehind);
+    return { text: `${prog.total}/${mostBehind.targetTotal}`, color: '#a78bfa' };
+  })();
 
   return (
     <div className={`relative rounded-2xl overflow-hidden transition-all duration-300 ${complete ? 'shadow-[0_0_24px_rgba(249,201,35,0.18)]' : ''}`}
@@ -264,7 +278,7 @@ export default function PlayerCard({
           <div className="text-xs text-white/40 mt-0.5">{player.goals.length} goal{player.goals.length !== 1 ? 's' : ''} · {expanded ? 'collapse ▲' : 'expand ▼'}</div>
           <div className="mt-2 flex items-center gap-2">
             <div className="flex-1"><Bar pct={overall} color={headerBarColor}/></div>
-            <span className="text-xs font-black flex-shrink-0" style={{ fontFamily: 'Oswald', color: complete ? '#f9c923' : allCumulativeOnPace ? '#4ade80' : 'rgba(255,255,255,0.7)', minWidth: '36px', textAlign: 'right' }}>{overall}%</span>
+            <span className="text-xs font-black flex-shrink-0" style={{ fontFamily: 'Oswald', color: headerLabel.color, minWidth: '36px', textAlign: 'right' }}>{headerLabel.text}</span>
           </div>
         </div>
       </button>

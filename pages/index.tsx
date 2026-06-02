@@ -97,7 +97,10 @@ export default function Home() {
               <div className="flex items-center gap-2.5">
                 <SoccerBall size={34}/>
                 <div>
-                  <h1 className="text-2xl text-yellow-400 leading-none tracking-widest" style={{ fontFamily:'Black Han Sans', textShadow:'0 1px 10px rgba(249,201,35,0.35)' }}>GOOOOOOOOOOOOOOOOOOAL</h1>
+                  <h1 className="text-2xl text-yellow-400 leading-none tracking-widest" style={{ fontFamily:'Black Han Sans', textShadow:'0 1px 10px rgba(249,201,35,0.35)' }}>
+                    <span className="sm:hidden">GOOOOOAL</span>
+                    <span className="hidden sm:inline">GOOOOOOOOOOOOOOOOOOAL</span>
+                  </h1>
                   <p className="text-white/35 text-[10px] tracking-wider uppercase mt-0.5">
                     {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
                   </p>

@@ -27,7 +27,7 @@ export interface ConsistencyGoal {
   createdAt: string; updatedAt: string;
 }
 
-export type Goal = RateGoal | HabitGoal | ConsistencyGoal;
+export type Goal = RateGoal | HabitGoal | ConsistencyGoal | CumulativeGoal;
 
 export interface Player {
   id: string;

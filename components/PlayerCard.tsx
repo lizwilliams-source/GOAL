@@ -242,6 +242,9 @@ export default function PlayerCard({
 }: Props) {
   const overall = getPlayerOverall(player);
   const complete = overall >= 100;
+  const cumulativeGoals = player.goals.filter((g): g is CumulativeGoal => g.type === 'cumulative');
+  const allCumulativeOnPace = cumulativeGoals.length > 0 && cumulativeGoals.every(g => getCumulativeProgress(g).onPace);
+  const headerBarColor = complete ? '#f9c923' : allCumulativeOnPace ? '#4ade80' : undefined;
 
   return (
     <div className={`relative rounded-2xl overflow-hidden transition-all duration-300 ${complete ? 'shadow-[0_0_24px_rgba(249,201,35,0.18)]' : ''}`}
@@ -257,8 +260,8 @@ export default function PlayerCard({
           <div className="font-black text-white text-base leading-tight" style={{ fontFamily: 'Oswald' }}>{player.name}</div>
           <div className="text-xs text-white/40 mt-0.5">{player.goals.length} goal{player.goals.length !== 1 ? 's' : ''} · {expanded ? 'collapse ▲' : 'expand ▼'}</div>
           <div className="mt-2 flex items-center gap-2">
-            <div className="flex-1"><Bar pct={overall}/></div>
-            <span className="text-xs font-black flex-shrink-0" style={{ fontFamily: 'Oswald', color: complete ? '#f9c923' : 'rgba(255,255,255,0.7)', minWidth: '36px', textAlign: 'right' }}>{overall}%</span>
+            <div className="flex-1"><Bar pct={overall} color={headerBarColor}/></div>
+            <span className="text-xs font-black flex-shrink-0" style={{ fontFamily: 'Oswald', color: complete ? '#f9c923' : allCumulativeOnPace ? '#4ade80' : 'rgba(255,255,255,0.7)', minWidth: '36px', textAlign: 'right' }}>{overall}%</span>
           </div>
         </div>
       </button>

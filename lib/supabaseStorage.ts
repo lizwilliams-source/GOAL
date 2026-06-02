@@ -97,7 +97,8 @@ export async function addGoal(playerId: string, goal: Omit<Goal, 'id' | 'created
     row.target_rate = g.targetRate;
   } else if (goal.type === 'cumulative') {
     const g = goal as CumulativeGoal;
-    row.unit = g.unit; row.target_total = g.targetTotal; row.target_period = g.targetPeriod ?? 'monthly';
+    row.unit = g.unit; row.target_total = g.targetTotal;
+    if (g.targetPeriod === 'weekly') row.target_period = 'weekly';
   }
   await getSupabase().from('goals').insert(row);
 }

@@ -58,7 +58,7 @@ function PlayerTile({ player, onTap }: { player: Player; onTap: () => void }) {
             style={{ background: complete ? '#f9c923' : '#4ade80' }}>⚽</div>
         )}
       </div>
-      <div className="font-black text-white text-xs text-center leading-tight truncate w-full" style={{ fontFamily:'Oswald' }}>{player.name}</div>
+      <div className="font-black text-white text-sm text-center leading-tight truncate w-full" style={{ fontFamily:'Oswald' }}>{player.name}</div>
       {bars.length > 0 && (
         <div className="w-full space-y-1">
           {bars.map((b, i) => (

@@ -122,12 +122,18 @@ export function getRateProgress(goal: RateGoal): {
   return { current, delta, progressPct, history: sorted.map(l => ({ date: l.date, value: l.value })) };
 }
 
+function isWeekend(dateStr: string): boolean {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.getDay() === 0 || d.getDay() === 6;
+}
+
 export function getHabitProgress(goal: HabitGoal): {
   doneDays: number; totalDays: number; pct: number; todayLogged: boolean; todayCompleted: boolean | null;
 } {
   const today = new Date().toISOString().split('T')[0];
-  const doneDays = goal.logs.filter(l => l.completed).length;
-  const totalDays = goal.logs.length;
+  const weekdayLogs = goal.logs.filter(l => !isWeekend(l.date));
+  const doneDays = weekdayLogs.filter(l => l.completed).length;
+  const totalDays = weekdayLogs.length;
   const pct = totalDays === 0 ? 0 : Math.round((doneDays / totalDays) * 100);
   const todayEntry = goal.logs.find(l => l.date === today);
   return { doneDays, totalDays, pct, todayLogged: !!todayEntry, todayCompleted: todayEntry?.completed ?? null };

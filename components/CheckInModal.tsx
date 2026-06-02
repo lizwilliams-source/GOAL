@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Goal, RateGoal, HabitGoal, ConsistencyGoal, CumulativeGoal, Player } from '../types';
-import { getRateProgress, getConsistencyProgress, getCumulativeProgress } from '../lib/storage';
+import { getRateProgress, getHabitProgress, getConsistencyProgress, getCumulativeProgress } from '../lib/storage';
 import AnimalAvatarImg from './AnimalAvatar';
 
 interface Props {
@@ -170,9 +170,7 @@ function RateCheckIn({ goal, onSubmit }: { goal: RateGoal; onSubmit: (v: number,
 function HabitCheckIn({ goal, date, onSubmit }: { goal: HabitGoal; date: string; onSubmit: (c: boolean, n?: string) => void }) {
   const [completed, setCompleted] = useState(true);
   const [note, setNote] = useState('');
-  const doneDays = goal.logs.filter(l => l.completed).length;
-  const totalDays = goal.logs.length;
-  const pct = totalDays === 0 ? 0 : Math.round((doneDays / totalDays) * 100);
+  const { doneDays, totalDays, pct } = getHabitProgress(goal);
   const dateEntry = goal.logs.find(l => l.date === date);
 
   return (

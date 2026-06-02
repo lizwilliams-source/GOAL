@@ -3,7 +3,8 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { AppData, Player, Goal } from '../types';
 import * as sb from '../lib/supabaseStorage';
-import { getPlayerOverall } from '../lib/storage';
+import { getPlayerOverall, getGoalProgress, getHabitProgress, getHabitStreak, getRateProgress, getConsistencyProgress, getCumulativeProgress } from '../lib/storage';
+import { HabitGoal, RateGoal, ConsistencyGoal, CumulativeGoal } from '../types';
 import OnboardingFlow from '../components/OnboardingFlow';
 import PlayerCard from '../components/PlayerCard';
 import CheckInModal from '../components/CheckInModal';
@@ -11,12 +12,81 @@ import AnimalAvatarImg from '../components/AnimalAvatar';
 import SoccerBall from '../components/SoccerBall';
 import AddGoalModal from '../components/AddGoalModal';
 
+function goalBarInfo(goal: Goal): { pct: number; color: string; label: string } {
+  if (goal.type === 'habit') {
+    const { pct } = getHabitProgress(goal as HabitGoal);
+    const c = pct >= 80 ? '#4ade80' : '#60a5fa';
+    return { pct, color: c, label: `${pct}%` };
+  }
+  if (goal.type === 'consistency') {
+    const { rate, progressPct } = getConsistencyProgress(goal as ConsistencyGoal);
+    const c = progressPct >= 100 ? '#f9c923' : '#fb923c';
+    return { pct: progressPct, color: c, label: `${rate}%` };
+  }
+  if (goal.type === 'rate') {
+    const { rate, progressPct } = getRateProgress(goal as RateGoal);
+    const c = progressPct >= 100 ? '#f9c923' : '#60a5fa';
+    return { pct: progressPct, color: c, label: `${rate}%` };
+  }
+  if (goal.type === 'cumulative') {
+    const { progressPct, onPace } = getCumulativeProgress(goal as CumulativeGoal);
+    const c = progressPct >= 100 ? '#f9c923' : onPace ? '#4ade80' : '#a78bfa';
+    return { pct: progressPct, color: c, label: onPace ? 'On pace' : `${(goal as CumulativeGoal).targetTotal - getCumulativeProgress(goal as CumulativeGoal).total > 0 ? getCumulativeProgress(goal as CumulativeGoal).total : '✓'}` };
+  }
+  return { pct: 0, color: '#60a5fa', label: '—' };
+}
+
+function PlayerTile({ player, onTap }: { player: Player; onTap: () => void }) {
+  const overall = getPlayerOverall(player);
+  const complete = player.goals.length > 0 && player.goals.every(g =>
+    g.type === 'cumulative' ? getCumulativeProgress(g as CumulativeGoal).progressPct >= 100 : getGoalProgress(g) >= 100
+  );
+  const cumulativeGoals = player.goals.filter((g): g is CumulativeGoal => g.type === 'cumulative');
+  const allCumulativeOnPace = cumulativeGoals.length > 0 && cumulativeGoals.every(g => getCumulativeProgress(g).onPace);
+  const habitStreak = player.goals.filter(g => g.type === 'habit').reduce((best, g) => Math.max(best, getHabitStreak(g as HabitGoal).current), 0);
+  const bars = player.goals.map(g => ({ ...goalBarInfo(g), emoji: g.emoji }));
+  const borderColor = complete ? 'rgba(249,201,35,0.6)' : allCumulativeOnPace ? 'rgba(74,222,128,0.4)' : 'rgba(255,255,255,0.1)';
+
+  return (
+    <button onClick={onTap} className="rounded-2xl p-3 flex flex-col items-center gap-2 w-full active:scale-95 transition-transform relative overflow-hidden"
+      style={{ background: 'rgba(0,0,0,0.4)', border: `2px solid ${borderColor}` }}>
+      <div className="absolute inset-0 pointer-events-none net-texture opacity-10 rounded-2xl"/>
+      <div className="relative">
+        <AnimalAvatarImg animal={player.avatar} size={56}/>
+        {(complete || allCumulativeOnPace) && (
+          <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black text-green-900"
+            style={{ background: complete ? '#f9c923' : '#4ade80' }}>⚽</div>
+        )}
+      </div>
+      <div className="font-black text-white text-xs text-center leading-tight truncate w-full" style={{ fontFamily:'Oswald' }}>{player.name}</div>
+      {bars.length > 0 && (
+        <div className="w-full space-y-1">
+          {bars.map((b, i) => (
+            <div key={i} className="flex items-center gap-1">
+              <span className="text-[9px] flex-shrink-0 w-3">{b.emoji}</span>
+              <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.4)' }}>
+                <div style={{ width: `${Math.min(100, b.pct)}%`, height: '100%', background: b.color, borderRadius: '999px', transition: 'width 0.7s ease-out' }}/>
+              </div>
+              <span className="text-[9px] font-bold flex-shrink-0 w-9 text-right" style={{ color: b.color }}>{b.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {habitStreak > 0 && (
+        <div className="text-[9px] font-bold" style={{ color: '#fb923c' }}>🔥 {habitStreak}d streak</div>
+      )}
+      {bars.length === 0 && <div className="text-[10px] text-white/30">No goals yet</div>}
+    </button>
+  );
+}
+
 export default function Home() {
   const router = useRouter();
   const [data, setData] = useState<AppData | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [checkIn, setCheckIn] = useState<{ player: Player; goal: Goal } | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [celebrating, setCelebrating] = useState(false);
   const [addGoalPlayer, setAddGoalPlayer] = useState<Player | null>(null);
 
@@ -197,41 +267,15 @@ export default function Home() {
             </div>
           ) : (
             <>
-              {data.players.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto pb-2 mb-5">
-                  {[...data.players].sort((a,b) => getPlayerOverall(b)-getPlayerOverall(a)).map((p,i) => {
-                    const pct = getPlayerOverall(p);
-                    return (
-                      <button key={p.id} onClick={() => setExpandedId(expandedId===p.id?null:p.id)}
-                        className="flex-shrink-0 flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all hover:scale-105"
-                        style={{ background:expandedId===p.id?'rgba(249,201,35,0.15)':'rgba(0,0,0,0.3)', border:`2px solid ${expandedId===p.id?'rgba(249,201,35,0.5)':'rgba(255,255,255,0.08)'}`, minWidth:'68px' }}>
-                        <div className="relative">
-                          <AnimalAvatarImg animal={p.avatar} size={44}/>
-                          {i===0 && <div className="absolute -top-2 -right-1 text-sm">👑</div>}
-                        </div>
-                        <div className="text-[10px] font-bold text-white/80 text-center leading-tight max-w-[64px] truncate">{p.name}</div>
-                        <div className="text-[10px] font-black" style={{ fontFamily:'Oswald', color:pct>=100?'#f9c923':'rgba(255,255,255,0.5)' }}>{pct}%</div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              <div className="space-y-3">
-                {data.players.map(player => (
-                  <PlayerCard key={player.id} player={player}
-                    onCheckIn={(p,g) => setCheckIn({ player:p, goal:g })}
-                    onAddGoal={(p) => setAddGoalPlayer(p)}
-                    onDeleteGoal={async (p, gid) => { await sb.deleteGoal(gid); await refresh(); }}
-                    onDeletePlayer={async (p) => { await sb.deletePlayer(p.id); await refresh(); }}
-                    expanded={expandedId===player.id}
-                    onToggle={() => setExpandedId(expandedId===player.id?null:player.id)}/>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {[...data.players].sort((a,b) => getPlayerOverall(b) - getPlayerOverall(a)).map(player => (
+                  <PlayerTile key={player.id} player={player} onTap={() => setSelectedPlayerId(player.id)}/>
                 ))}
-              </div>
-              <div className="mt-5 text-center">
                 <button onClick={() => setShowOnboarding(true)}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all hover:scale-105"
-                  style={{ background:'rgba(249,201,35,0.1)', color:'#f9c923', border:'2px dashed rgba(249,201,35,0.3)', fontFamily:'Oswald' }}>
-                  + ADD TEAMMATE
+                  className="rounded-2xl p-3 flex flex-col items-center justify-center gap-2 active:scale-95 transition-transform"
+                  style={{ background:'rgba(0,0,0,0.2)', border:'2px dashed rgba(249,201,35,0.25)', minHeight:'140px' }}>
+                  <span className="text-2xl">➕</span>
+                  <span className="text-xs font-bold text-yellow-400/60" style={{ fontFamily:'Oswald' }}>Add Player</span>
                 </button>
               </div>
             </>
@@ -244,12 +288,33 @@ export default function Home() {
           </div>
         </main>
 
-        <button onClick={() => setShowOnboarding(true)}
-          className="fixed right-6 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl active:scale-95 transition-transform sm:hidden z-30"
-          style={{ bottom: 'max(24px, env(safe-area-inset-bottom, 24px))', background:'#f9c923', boxShadow:'0 4px 20px rgba(249,201,35,0.4)' }}>
-          ⚽
-        </button>
       </div>
+
+      {/* Player bottom sheet */}
+      {selectedPlayerId && (() => {
+        const player = data?.players.find(p => p.id === selectedPlayerId);
+        if (!player) return null;
+        return (
+          <div className="fixed inset-0 z-50 flex items-end modal-backdrop" onClick={() => setSelectedPlayerId(null)}>
+            <div className="w-full max-w-lg mx-auto rounded-t-3xl overflow-y-auto slide-up"
+              style={{ background:'#0a2f0e', border:'2px solid rgba(249,201,35,0.2)', borderBottom:'none', maxHeight:'90svh', paddingBottom:'env(safe-area-inset-bottom, 16px)' }}
+              onClick={e => e.stopPropagation()}>
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="w-10 h-1 rounded-full bg-white/20"/>
+              </div>
+              <div className="px-4 pb-4">
+                <PlayerCard player={player}
+                  onCheckIn={(p,g) => { setSelectedPlayerId(null); setCheckIn({ player:p, goal:g }); }}
+                  onAddGoal={(p) => { setSelectedPlayerId(null); setAddGoalPlayer(p); }}
+                  onDeleteGoal={async (p, gid) => { await sb.deleteGoal(gid); await refresh(); }}
+                  onDeletePlayer={async (p) => { setSelectedPlayerId(null); await sb.deletePlayer(p.id); await refresh(); }}
+                  expanded={true}
+                  onToggle={() => setSelectedPlayerId(null)}/>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {checkIn && (
         <CheckInModal

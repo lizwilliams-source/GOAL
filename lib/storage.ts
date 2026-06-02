@@ -219,7 +219,7 @@ export function getCumulativeProgress(goal: CumulativeGoal): {
     const mondayStr = monday.toISOString().split('T')[0];
     total = goal.logs.filter(l => l.date >= mondayStr && l.date <= today).reduce((s, l) => s + l.amount, 0);
     periodLabel = 'this week';
-    const daysDone = dow === 0 || dow === 6 ? 5 : Math.max(0, dow - 1); // days fully completed before today
+    const daysDone = (dow === 0 || dow === 5 || dow === 6) ? 5 : Math.max(0, dow - 1); // Fri/Sat/Sun = full week expected
     pacePct = Math.round((daysDone / 5) * 100);
   } else {
     const monthStr = today.slice(0, 7);

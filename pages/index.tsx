@@ -75,11 +75,25 @@ export default function Home() {
   const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
   const monthPct = Math.round((today.getDate() / daysInMonth) * 100);
   const teamAvg = data.players.length === 0 ? 0 : Math.round(data.players.reduce((s, p) => s + getPlayerOverall(p), 0) / data.players.length);
-  const notLoggedToday = data.players.filter(p =>
-    p.goals.length > 0 && !p.goals.some(g =>
-      (g.logs as { date: string }[]).some(l => l.date === todayStr)
-    )
-  );
+  const prevWorkday = (() => {
+    const d = new Date(); d.setDate(d.getDate() - 1);
+    while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() - 1);
+    return d.toISOString().split('T')[0];
+  })();
+  const twoWorkdaysAgo = (() => {
+    const d = new Date(); let n = 0;
+    while (n < 2) { d.setDate(d.getDate() - 1); if (d.getDay() !== 0 && d.getDay() !== 6) n++; }
+    return d.toISOString().split('T')[0];
+  })();
+  const lastLog = (p: Player) => {
+    const dates = p.goals.flatMap(g => (g.logs as {date:string}[]).map(l => l.date));
+    return dates.length > 0 ? dates.sort().pop()! : null;
+  };
+  const notLoggedYesterday = data.players.filter(p => {
+    if (p.goals.length === 0) return false;
+    const last = lastLog(p);
+    return !last || last < prevWorkday;
+  });
 
   return (
     <>
@@ -147,13 +161,24 @@ export default function Home() {
         </header>
 
         <main className="max-w-2xl mx-auto px-4 py-6 pb-24 sm:pb-6">
-          {notLoggedToday.length > 0 && (
-            <div className="mb-4 px-3 py-2.5 rounded-xl flex items-center gap-2.5" style={{ background:'rgba(251,146,60,0.1)', border:'1px solid rgba(251,146,60,0.2)' }}>
-              <span className="text-base">⏰</span>
-              <div className="flex-1 min-w-0">
-                <span className="text-xs text-white/60">Hasn&apos;t logged today: </span>
-                <span className="text-xs font-semibold text-white/80">{notLoggedToday.map(p => p.name).join(', ')}</span>
+          {notLoggedYesterday.length > 0 && (
+            <div className="mb-4 px-3 py-2.5 rounded-xl" style={{ background:'rgba(251,146,60,0.1)', border:'1px solid rgba(251,146,60,0.2)' }}>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-base">⏰</span>
+                <span className="text-xs text-white/50">Didn&apos;t log yesterday:</span>
+                {notLoggedYesterday.map(p => {
+                  const last = lastLog(p);
+                  const reallyBehind = !last || last < twoWorkdaysAgo;
+                  return (
+                    <span key={p.id} className="text-xs font-semibold" style={{ color: reallyBehind ? '#f87171' : 'rgba(255,255,255,0.75)' }}>
+                      {p.name}{reallyBehind ? ' 🚨' : ''}
+                    </span>
+                  );
+                })}
               </div>
+              {notLoggedYesterday.some(p => { const l = lastLog(p); return !l || l < twoWorkdaysAgo; }) && (
+                <div className="text-[10px] text-red-400/60 mt-1 ml-6">🚨 = 2+ days behind</div>
+              )}
             </div>
           )}
           {data.players.length === 0 ? (

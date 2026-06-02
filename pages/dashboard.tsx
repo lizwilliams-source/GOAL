@@ -6,8 +6,6 @@ import { loadData, getRecentActivity, ActivityItem } from '../lib/supabaseStorag
 import { getPlayerOverall, getGoalProgress, getHabitStreak } from '../lib/storage';
 import { HabitGoal } from '../types';
 import AnimalAvatarImg from '../components/AnimalAvatar';
-import SoccerBall from '../components/SoccerBall';
-
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
@@ -28,56 +26,83 @@ function goalTypeColor(type: string): string {
 
 // ---- PODIUM ----
 function Podium({ players }: { players: Player[] }) {
-  const ranked = [...players].sort((a, b) => getPlayerOverall(b) - getPlayerOverall(a));
-  const first = ranked[0], second = ranked[1], third = ranked[2];
+  const sorted = [...players].sort((a, b) => getPlayerOverall(b) - getPlayerOverall(a));
 
-  const PodiumSlot = ({ player, rank, height, medal }: { player?: Player; rank: number; height: number; medal: string }) => {
-    const score = player ? getPlayerOverall(player) : 0;
-    const colors = ['#f9c923', '#94a3b8', '#cd7c3a'];
-    const color = colors[rank - 1] ?? '#60a5fa';
-    return (
-      <div className="flex flex-col items-center" style={{ width: '30%' }}>
-        {player ? (
-          <>
-            <div className="relative mb-2">
-              {rank === 1 && <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-2xl">👑</div>}
-              <AnimalAvatarImg animal={player.avatar} size={rank === 1 ? 80 : 64}/>
-            </div>
-            <div className="text-xs font-black text-white text-center mb-0.5 truncate w-full px-1" style={{ fontFamily:'Oswald' }}>{player.name}</div>
-            <div className="text-sm font-black mb-2" style={{ fontFamily:'Black Han Sans', color }}>{score}%</div>
-          </>
-        ) : (
-          <div className="mb-2" style={{ height: rank === 1 ? 96 : 80 }}/>
-        )}
-        <div className="w-full rounded-t-lg flex flex-col items-center justify-end pb-3 relative overflow-hidden"
-          style={{ height, background: `linear-gradient(180deg, ${color}22 0%, ${color}44 100%)`, border: `2px solid ${color}66`, borderBottom: 'none' }}>
-          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(255,255,255,0.3) 8px, rgba(255,255,255,0.3) 9px)' }}/>
-          <span className="text-3xl relative z-10">{medal}</span>
-          <span className="text-[10px] font-bold relative z-10 mt-0.5" style={{ color, fontFamily:'Oswald' }}>
-            {rank === 1 ? '1ST' : rank === 2 ? '2ND' : '3RD'}
-          </span>
-        </div>
-      </div>
-    );
-  };
+  // Group by score so ties share a platform
+  const groups: Player[][] = [];
+  for (const p of sorted) {
+    const score = getPlayerOverall(p);
+    if (groups.length === 0 || getPlayerOverall(groups[groups.length - 1][0]) !== score) {
+      groups.push([p]);
+    } else {
+      groups[groups.length - 1].push(p);
+    }
+  }
+
+  const platformGroups = groups.slice(0, 3);
+  const rest = groups.slice(3).flat();
+  const medals = ['🥇','🥈','🥉'];
+  const rankLabels = ['1ST','2ND','3RD'];
+  const colors = ['#f9c923','#94a3b8','#cd7c3a'];
+  const heights = [130, 90, 70];
+
+  // Reorder to 2nd | 1st | 3rd for visual podium
+  const displayOrder = platformGroups.length === 1
+    ? [undefined, platformGroups[0], undefined]
+    : platformGroups.length === 2
+    ? [platformGroups[1], platformGroups[0], undefined]
+    : [platformGroups[1], platformGroups[0], platformGroups[2]];
 
   return (
     <div className="rounded-2xl p-6 mb-6 relative overflow-hidden" style={{ background: 'rgba(0,0,0,0.35)', border: '2px solid rgba(249,201,35,0.2)' }}>
       <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,255,255,0.5) 40px, rgba(255,255,255,0.5) 41px), repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,0.5) 40px, rgba(255,255,255,0.5) 41px)' }}/>
       <div className="flex items-center gap-2 mb-6 relative z-10">
-        <SoccerBall size={22} spinning/>
+        <span className="text-xl">⚽</span>
         <h2 className="text-lg font-black text-yellow-400 tracking-widest" style={{ fontFamily:'Black Han Sans' }}>SQUAD PODIUM</h2>
       </div>
       <div className="flex items-end justify-center gap-2 relative z-10">
-        <PodiumSlot player={second} rank={2} height={90} medal="🥈"/>
-        <PodiumSlot player={first}  rank={1} height={130} medal="🥇"/>
-        <PodiumSlot player={third}  rank={3} height={70}  medal="🥉"/>
+        {displayOrder.map((group, slotIdx) => {
+          // slotIdx 0=2nd, 1=1st, 2=3rd
+          const rankIdx = slotIdx === 0 ? 1 : slotIdx === 1 ? 0 : 2;
+          const color = colors[rankIdx];
+          const height = heights[rankIdx];
+          const medal = medals[rankIdx];
+          const label = rankLabels[rankIdx];
+          const score = group ? getPlayerOverall(group[0]) : 0;
+          const avatarSize = rankIdx === 0 ? (group && group.length > 2 ? 44 : 64) : (group && group.length > 2 ? 36 : 52);
+          return (
+            <div key={slotIdx} className="flex flex-col items-center" style={{ flex: rankIdx === 0 ? '1.2' : '1' }}>
+              {group ? (
+                <>
+                  {rankIdx === 0 && <div className="text-2xl mb-1">👑</div>}
+                  <div className={`flex flex-wrap justify-center gap-1 mb-1 ${group.length > 1 ? 'max-w-[120px]' : ''}`}>
+                    {group.map(p => (
+                      <div key={p.id} className="flex flex-col items-center">
+                        <AnimalAvatarImg animal={p.avatar} size={avatarSize}/>
+                        <div className="text-[9px] font-black text-center mt-0.5 truncate" style={{ maxWidth: avatarSize + 8, color }}>{p.name.split(' ')[0]}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-sm font-black mb-2 text-center" style={{ fontFamily:'Black Han Sans', color }}>{score}%</div>
+                </>
+              ) : (
+                <div style={{ height: rankIdx === 0 ? 100 : 80 }}/>
+              )}
+              <div className="w-full rounded-t-lg flex flex-col items-center justify-end pb-3 relative overflow-hidden"
+                style={{ height, background: `linear-gradient(180deg, ${color}22 0%, ${color}44 100%)`, border: `2px solid ${color}66`, borderBottom: 'none' }}>
+                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(255,255,255,0.3) 8px, rgba(255,255,255,0.3) 9px)' }}/>
+                <span className="text-2xl relative z-10">{medal}</span>
+                <span className="text-[10px] font-bold relative z-10 mt-0.5" style={{ color, fontFamily:'Oswald' }}>{label}</span>
+              </div>
+            </div>
+          );
+        })}
       </div>
-      {ranked.slice(3).length > 0 && (
+      {rest.length > 0 && (
         <div className="mt-4 space-y-1.5 relative z-10">
-          {ranked.slice(3).map((p, i) => (
+          {rest.map((p, i) => (
             <div key={p.id} className="flex items-center gap-3 px-3 py-1.5 rounded-lg" style={{ background: 'rgba(0,0,0,0.25)' }}>
-              <span className="text-white/30 text-xs font-bold w-4 text-center">{i + 4}</span>
+              <span className="text-white/30 text-xs font-bold w-4 text-center">{platformGroups.reduce((s, g) => s + g.length, 0) + i + 1}</span>
               <AnimalAvatarImg animal={p.avatar} size={28}/>
               <span className="text-xs font-bold text-white/70 flex-1" style={{ fontFamily:'Oswald' }}>{p.name}</span>
               <span className="text-xs font-black text-white/50" style={{ fontFamily:'Oswald' }}>{getPlayerOverall(p)}%</span>
@@ -92,19 +117,32 @@ function Podium({ players }: { players: Player[] }) {
 // ---- TEAM STATS ----
 function TeamStats({ players }: { players: Player[] }) {
   const avg = players.length === 0 ? 0 : Math.round(players.reduce((s, p) => s + getPlayerOverall(p), 0) / players.length);
-  const topScorer = [...players].sort((a, b) => getPlayerOverall(b) - getPlayerOverall(a))[0];
-  const at100 = players.filter(p => getPlayerOverall(p) >= 100).length;
+
+  const allGoals = players.flatMap(p => p.goals);
+  const hitGoals = allGoals.filter(g => getGoalProgress(g) >= 100).length;
+  const totalGoals = allGoals.length;
+
+  const sorted = [...players].sort((a, b) => getPlayerOverall(b) - getPlayerOverall(a));
+  const topScore = sorted.length > 0 ? getPlayerOverall(sorted[0]) : 0;
+  const topScorers = sorted.filter(p => getPlayerOverall(p) === topScore);
+  const topScorerLabel = topScorers.map(p => p.name.split(' ')[0]).join(' & ') || '—';
+
   const bestStreak = players.reduce((best, p) => {
-    const streaks = p.goals.filter(g => g.type === 'habit').map(g => getHabitStreak(g as HabitGoal).current);
-    return Math.max(best, ...streaks, 0);
+    const s = p.goals.filter(g => g.type === 'habit').map(g => getHabitStreak(g as HabitGoal).current);
+    return Math.max(best, ...s, 0);
   }, 0);
-  const streakHolder = players.find(p => p.goals.filter(g => g.type === 'habit').some(g => getHabitStreak(g as HabitGoal).current === bestStreak && bestStreak > 0));
+  const streakHolders = players.filter(p =>
+    p.goals.some(g => g.type === 'habit' && getHabitStreak(g as HabitGoal).current === bestStreak && bestStreak > 0)
+  );
+  const streakLabel = bestStreak > 0
+    ? `🔥 ${bestStreak}d — ${streakHolders.map(p => p.name.split(' ')[0]).join(' & ')}`
+    : 'No streak yet';
 
   const stats = [
     { label: 'Team Avg', value: `${avg}%`, icon: '📊', color: avg >= 70 ? '#4ade80' : avg >= 40 ? '#60a5fa' : '#fb923c' },
-    { label: 'Goals Hit', value: `${at100}/${players.length}`, icon: '⚽', color: '#f9c923' },
-    { label: 'Top Scorer', value: topScorer?.name ?? '—', icon: '👑', color: '#f9c923' },
-    { label: 'Hot Streak', value: bestStreak > 0 ? `🔥 ${bestStreak}d${streakHolder ? ` (${streakHolder.name.split(' ')[0]})` : ''}` : 'No streak', icon: '🔥', color: '#fb923c' },
+    { label: 'Goals Hit', value: `${hitGoals}/${totalGoals}`, icon: '⚽', color: '#f9c923' },
+    { label: 'Top Scorer', value: topScorerLabel, icon: '👑', color: '#f9c923' },
+    { label: 'Hot Streak', value: streakLabel, icon: '🔥', color: '#fb923c' },
   ];
 
   return (
@@ -254,7 +292,7 @@ export default function Dashboard() {
 
         {loading ? (
           <div className="flex items-center justify-center py-24">
-            <SoccerBall size={48} spinning className="opacity-60"/>
+            <span className="text-5xl animate-pulse">⚽</span>
           </div>
         ) : (
           <div className="max-w-2xl mx-auto px-4 py-6">

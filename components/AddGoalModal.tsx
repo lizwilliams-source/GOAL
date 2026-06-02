@@ -30,6 +30,7 @@ export default function AddGoalModal({ player, onAdd, onClose }: Props) {
   const [targetRate, setTargetRate] = useState('90');
   const [targetTotal, setTargetTotal] = useState('');
   const [cumUnit, setCumUnit] = useState('');
+  const [cumPeriod, setCumPeriod] = useState<'monthly' | 'weekly'>('monthly');
 
   const submit = () => {
     if (!title.trim()) return;
@@ -38,7 +39,7 @@ export default function AddGoalModal({ player, onAdd, onClose }: Props) {
     } else if (type === 'consistency') {
       onAdd({ type: 'consistency', title: title.trim(), description: desc.trim(), emoji, targetRate: parseInt(targetRate)||80, logs: [] });
     } else if (type === 'cumulative') {
-      onAdd({ type: 'cumulative', title: title.trim(), description: desc.trim(), emoji, targetTotal: parseFloat(targetTotal)||100, unit: cumUnit||'items', logs: [] });
+      onAdd({ type: 'cumulative', title: title.trim(), description: desc.trim(), emoji, targetTotal: parseFloat(targetTotal)||100, unit: cumUnit||'items', targetPeriod: cumPeriod, logs: [] });
     } else {
       onAdd({ type: 'habit', title: title.trim(), description: desc.trim(), emoji, logs: [] });
     }
@@ -100,14 +101,25 @@ export default function AddGoalModal({ player, onAdd, onClose }: Props) {
           </div>
         )}
         {type==='cumulative' && (
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            <div>
-              <label className="text-xs text-white/40 mb-1 block">Monthly target</label>
-              <input type="number" placeholder="e.g. 100" value={targetTotal} onChange={e=>setTargetTotal(e.target.value)} className="w-full"/>
+          <div className="mb-3 space-y-2">
+            <div className="flex gap-2">
+              {(['monthly', 'weekly'] as const).map(p => (
+                <button key={p} onClick={() => setCumPeriod(p)}
+                  className="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all capitalize"
+                  style={{ background: cumPeriod===p ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${cumPeriod===p ? 'rgba(167,139,250,0.6)' : 'transparent'}`, color: cumPeriod===p ? '#a78bfa' : 'rgba(255,255,255,0.4)' }}>
+                  {p}
+                </button>
+              ))}
             </div>
-            <div>
-              <label className="text-xs text-white/40 mb-1 block">Unit</label>
-              <input type="text" placeholder="calls, demos..." value={cumUnit} onChange={e=>setCumUnit(e.target.value)} className="w-full"/>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-white/40 mb-1 block">{cumPeriod === 'weekly' ? 'Weekly' : 'Monthly'} target</label>
+                <input type="number" placeholder="e.g. 100" value={targetTotal} onChange={e=>setTargetTotal(e.target.value)} className="w-full"/>
+              </div>
+              <div>
+                <label className="text-xs text-white/40 mb-1 block">Unit</label>
+                <input type="text" placeholder="calls, demos..." value={cumUnit} onChange={e=>setCumUnit(e.target.value)} className="w-full"/>
+              </div>
             </div>
           </div>
         )}

@@ -47,6 +47,7 @@ export async function loadData(): Promise<AppData> {
       if (g.type === 'cumulative') return {
         type: 'cumulative', id: g.id, title: g.title, description: g.description ?? '',
         emoji: g.emoji ?? '🎯', unit: g.unit ?? 'items', targetTotal: g.target_total ?? 100,
+        targetPeriod: (g.target_period === 'weekly' ? 'weekly' : 'monthly') as 'weekly' | 'monthly',
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         logs: (cumulativeLogs ?? []).filter((l: any) => l.goal_id === g.id).map((l: any) => ({ date: l.date, amount: l.amount, note: l.note ?? undefined })),
         createdAt: g.created_at, updatedAt: g.created_at,
@@ -96,7 +97,7 @@ export async function addGoal(playerId: string, goal: Omit<Goal, 'id' | 'created
     row.target_rate = g.targetRate;
   } else if (goal.type === 'cumulative') {
     const g = goal as CumulativeGoal;
-    row.unit = g.unit; row.target_total = g.targetTotal;
+    row.unit = g.unit; row.target_total = g.targetTotal; row.target_period = g.targetPeriod ?? 'monthly';
   }
   await getSupabase().from('goals').insert(row);
 }

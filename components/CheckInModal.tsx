@@ -218,7 +218,7 @@ function HabitCheckIn({ goal, date, onSubmit }: { goal: HabitGoal; date: string;
 function CumulativeCheckIn({ goal, onSubmit }: { goal: CumulativeGoal; onSubmit: (a: number, n?: string) => void }) {
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
-  const { total, progressPct } = getCumulativeProgress(goal);
+  const { total, progressPct, periodLabel } = getCumulativeProgress(goal);
 
   return (
     <div>
@@ -226,7 +226,7 @@ function CumulativeCheckIn({ goal, onSubmit }: { goal: CumulativeGoal; onSubmit:
         <div className="mb-4 p-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.3)' }}>
           <div className="flex items-baseline justify-between mb-1">
             <span className="text-2xl font-black" style={{ fontFamily: 'Black Han Sans', color: '#a78bfa' }}>{total} {goal.unit}</span>
-            <span className="text-xs text-white/40">of {goal.targetTotal} target</span>
+            <span className="text-xs text-white/40">of {goal.targetTotal} {periodLabel}</span>
           </div>
           <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.4)' }}>
             <div className="h-full rounded-full transition-all duration-700" style={{ width: `${progressPct}%`, background: progressPct >= 100 ? '#f9c923' : '#a78bfa' }}/>

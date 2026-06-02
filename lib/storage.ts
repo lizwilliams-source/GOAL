@@ -146,11 +146,26 @@ export function getConsistencyProgress(goal: ConsistencyGoal): {
 }
 
 export function getCumulativeProgress(goal: CumulativeGoal): {
-  total: number; progressPct: number;
+  total: number; progressPct: number; periodLabel: string;
 } {
-  const total = goal.logs.reduce((s, l) => s + l.amount, 0);
+  const today = new Date().toISOString().split('T')[0];
+  let total: number;
+  let periodLabel: string;
+  if (goal.targetPeriod === 'weekly') {
+    const now = new Date();
+    const dow = now.getDay();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+    const mondayStr = monday.toISOString().split('T')[0];
+    total = goal.logs.filter(l => l.date >= mondayStr && l.date <= today).reduce((s, l) => s + l.amount, 0);
+    periodLabel = 'this week';
+  } else {
+    const monthStr = today.slice(0, 7);
+    total = goal.logs.filter(l => l.date.startsWith(monthStr)).reduce((s, l) => s + l.amount, 0);
+    periodLabel = 'this month';
+  }
   const progressPct = goal.targetTotal === 0 ? 100 : Math.min(100, Math.round((total / goal.targetTotal) * 100));
-  return { total, progressPct };
+  return { total, progressPct, periodLabel };
 }
 
 export function getGoalProgress(goal: Goal): number {

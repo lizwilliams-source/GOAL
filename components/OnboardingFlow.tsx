@@ -25,8 +25,8 @@ const TEMPLATES = [
   { type: 'rate'        as GoalType, title: 'Improve close rate from 33% to 40%', description: 'Track close rate over the month', emoji: '📈', unit: '%', startValue: 30, targetValue: 40 },
   { type: 'habit'       as GoalType, title: 'Hit 200 WIN daily', description: '200+ Work Effort metric every working day', emoji: '💼' },
   { type: 'habit'       as GoalType, title: 'Source 25 fresh leads every day', description: 'Self-prospect 25 leads every dat', emoji: '⚡' },
-  { type: 'cumulative'  as GoalType, title: 'Set 40 Demos this month', description: 'Set 40 qualified demos this month', emoji: '📞', targetTotal: 40, unit: 'Sets' },
-  { type: 'cumulative'  as GoalType, title: 'Hold 10 Demos this month', description: 'Hold a demo every other day', emoji: '📅', targetTotal: 10, unit: 'Holds' },
+  { type: 'cumulative'  as GoalType, title: 'Set 40 Demos this month', description: 'Set 40 qualified demos this month', emoji: '📞', targetTotal: 40, unit: 'Sets', targetPeriod: 'monthly' },
+  { type: 'cumulative'  as GoalType, title: 'Hold 10 Demos this month', description: 'Hold a demo every other day', emoji: '📅', targetTotal: 10, unit: 'Holds', targetPeriod: 'monthly' },
 ];
 
 const EMOJIS = ['🎯','💼','📈','💬','📋','⚡','🔥','💪','🏆','📞','🤝','💰','🚀','⭐','🎪'];
@@ -35,7 +35,7 @@ function mkGoal(tmpl: typeof TEMPLATES[0]): Goal {
   const base = { id: uuidv4(), title: tmpl.title, description: tmpl.description, emoji: tmpl.emoji, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
   if (tmpl.type === 'consistency') return { ...base, type: 'consistency', targetRate: (tmpl as any).targetRate ?? 80, logs: [] };
   if (tmpl.type === 'rate')        return { ...base, type: 'rate', unit: (tmpl as any).unit ?? '%', startValue: (tmpl as any).startValue ?? 0, targetValue: (tmpl as any).targetValue ?? 100, logs: [] };
-  if (tmpl.type === 'cumulative')  return { ...base, type: 'cumulative', targetTotal: (tmpl as any).targetTotal ?? 100, unit: (tmpl as any).unit ?? 'items', logs: [] };
+  if (tmpl.type === 'cumulative')  return { ...base, type: 'cumulative', targetTotal: (tmpl as any).targetTotal ?? 100, unit: (tmpl as any).unit ?? 'items', targetPeriod: (tmpl as any).targetPeriod ?? 'monthly', logs: [] };
   return { ...base, type: 'habit', logs: [] };
 }
 
@@ -50,13 +50,14 @@ function CustomForm({ onAdd, onCancel }: { onAdd: (g: Goal) => void; onCancel: (
   const [targetRate, setTargetRate] = useState('90');
   const [targetTotal, setTargetTotal] = useState('');
   const [cumUnit, setCumUnit] = useState('');
+  const [cumPeriod, setCumPeriod] = useState<'monthly' | 'weekly'>('monthly');
 
   const submit = () => {
     if (!title.trim()) return;
     const base = { id: uuidv4(), title: title.trim(), description: desc.trim(), emoji, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
     if (type === 'rate')             onAdd({ ...base, type: 'rate', unit, startValue: parseFloat(startVal)||0, targetValue: parseFloat(targetVal)||100, logs: [] });
     else if (type === 'consistency') onAdd({ ...base, type: 'consistency', targetRate: parseInt(targetRate)||80, logs: [] });
-    else if (type === 'cumulative')  onAdd({ ...base, type: 'cumulative', targetTotal: parseFloat(targetTotal)||100, unit: cumUnit||'items', logs: [] });
+    else if (type === 'cumulative')  onAdd({ ...base, type: 'cumulative', targetTotal: parseFloat(targetTotal)||100, unit: cumUnit||'items', targetPeriod: cumPeriod, logs: [] });
     else                             onAdd({ ...base, type: 'habit', logs: [] });
   };
 
@@ -92,14 +93,25 @@ function CustomForm({ onAdd, onCancel }: { onAdd: (g: Goal) => void; onCancel: (
         </div>
       )}
       {type==='cumulative' && (
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-xs text-white/40 mb-1 block">Monthly target</label>
-            <input type="number" placeholder="e.g. 100" value={targetTotal} onChange={e=>setTargetTotal(e.target.value)} className="w-full"/>
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            {(['monthly', 'weekly'] as const).map(p => (
+              <button key={p} onClick={() => setCumPeriod(p)}
+                className="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all capitalize"
+                style={{ background: cumPeriod===p ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${cumPeriod===p ? 'rgba(167,139,250,0.6)' : 'transparent'}`, color: cumPeriod===p ? '#a78bfa' : 'rgba(255,255,255,0.4)' }}>
+                {p}
+              </button>
+            ))}
           </div>
-          <div>
-            <label className="text-xs text-white/40 mb-1 block">Unit</label>
-            <input type="text" placeholder="calls, demos..." value={cumUnit} onChange={e=>setCumUnit(e.target.value)} className="w-full"/>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-xs text-white/40 mb-1 block">{cumPeriod === 'weekly' ? 'Weekly' : 'Monthly'} target</label>
+              <input type="number" placeholder="e.g. 100" value={targetTotal} onChange={e=>setTargetTotal(e.target.value)} className="w-full"/>
+            </div>
+            <div>
+              <label className="text-xs text-white/40 mb-1 block">Unit</label>
+              <input type="text" placeholder="calls, demos..." value={cumUnit} onChange={e=>setCumUnit(e.target.value)} className="w-full"/>
+            </div>
           </div>
         </div>
       )}

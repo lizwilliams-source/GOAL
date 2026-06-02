@@ -244,7 +244,11 @@ export default function PlayerCard({
   const complete = overall >= 100;
   const cumulativeGoals = player.goals.filter((g): g is CumulativeGoal => g.type === 'cumulative');
   const allCumulativeOnPace = cumulativeGoals.length > 0 && cumulativeGoals.every(g => getCumulativeProgress(g).onPace);
-  const headerBarColor = complete ? '#f9c923' : allCumulativeOnPace ? '#4ade80' : undefined;
+  const headerBarColor = complete
+    ? '#f9c923'
+    : cumulativeGoals.length > 0
+      ? allCumulativeOnPace ? '#4ade80' : '#a78bfa'
+      : undefined;
 
   return (
     <div className={`relative rounded-2xl overflow-hidden transition-all duration-300 ${complete ? 'shadow-[0_0_24px_rgba(249,201,35,0.18)]' : ''}`}

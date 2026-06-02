@@ -166,8 +166,8 @@ export function getCumulativeProgress(goal: CumulativeGoal): {
     const mondayStr = monday.toISOString().split('T')[0];
     total = goal.logs.filter(l => l.date >= mondayStr && l.date <= today).reduce((s, l) => s + l.amount, 0);
     periodLabel = 'this week';
-    const workDay = dow === 0 || dow === 6 ? 5 : dow; // Sat/Sun = end of week
-    pacePct = Math.round((workDay / 5) * 100);
+    const daysDone = dow === 0 || dow === 6 ? 5 : Math.max(0, dow - 1); // days fully completed before today
+    pacePct = Math.round((daysDone / 5) * 100);
   } else {
     const monthStr = today.slice(0, 7);
     total = goal.logs.filter(l => l.date.startsWith(monthStr)).reduce((s, l) => s + l.amount, 0);

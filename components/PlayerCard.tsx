@@ -154,17 +154,16 @@ function CumulativeDisplay({ goal, onLog, onDelete }: { goal: CumulativeGoal; on
           <button onClick={onDelete} className="text-sm w-9 h-9 flex items-center justify-center rounded-lg text-white/30 hover:text-red-400 active:text-red-400 transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}>✕</button>
         </div>
       </div>
-      <div className="flex items-baseline gap-2 mb-2">
-        <span className="text-xl font-black" style={{ fontFamily: 'Black Han Sans', color: barColor }}>{total}</span>
-        <span className="text-xs text-white/40">{goal.unit}</span>
-        <span className="text-[10px] text-white/30 ml-auto">→ {goal.targetTotal} {periodLabel}</span>
+      <div className="flex items-end gap-1.5 mt-1 mb-1">
+        <span className="text-3xl font-black leading-none" style={{ fontFamily: 'Black Han Sans', color: barColor }}>{total}</span>
+        <span className="text-lg text-white/35 pb-0.5">/ {goal.targetTotal}</span>
+        <span className="text-xs text-white/40 pb-0.5">{goal.unit}</span>
+        <span className="text-[10px] text-white/25 pb-0.5 ml-auto">{periodLabel}</span>
       </div>
-      {todayTotal > 0 && <div className="text-[10px] text-white/30 mb-1.5">Today: +{todayTotal} {goal.unit}</div>}
-      <div className="flex justify-between text-[10px] text-white/30 mb-1">
-        <span>{onPace && !complete ? '✓ On pace' : !onPace ? 'Behind pace' : ''}</span>
-        <span className="font-bold" style={{ color: complete ? '#f9c923' : onPace ? '#4ade80' : 'rgba(255,255,255,0.6)' }}>{progressPct}%</span>
+      <div className="text-xs mt-1" style={{ color: complete ? '#f9c923' : onPace ? '#4ade80' : 'rgba(255,255,255,0.35)' }}>
+        {complete ? '⚽ Goal reached!' : onPace ? '✓ On pace' : `${Math.max(0, goal.targetTotal - total)} more needed`}
       </div>
-      <Bar pct={progressPct} color={barColor}/>
+      {todayTotal > 0 && <div className="text-[10px] text-white/30 mt-1">+{todayTotal} today</div>}
     </div>
   );
 }

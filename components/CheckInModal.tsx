@@ -249,18 +249,16 @@ function CumulativeCheckIn({ goal, onSubmit }: { goal: CumulativeGoal; onSubmit:
 
   return (
     <div>
-      {total > 0 && (
+      {(total > 0 || true) && (
         <div className="mb-4 p-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.3)' }}>
-          <div className="flex items-baseline justify-between mb-1">
-            <span className="text-2xl font-black" style={{ fontFamily: 'Black Han Sans', color: barColor }}>{total} {goal.unit}</span>
-            <span className="text-xs text-white/40">of {goal.targetTotal} {periodLabel}</span>
+          <div className="flex items-end gap-1.5 mb-1">
+            <span className="text-3xl font-black leading-none" style={{ fontFamily: 'Black Han Sans', color: barColor }}>{total}</span>
+            <span className="text-lg text-white/35 pb-0.5">/ {goal.targetTotal}</span>
+            <span className="text-xs text-white/40 pb-0.5">{goal.unit}</span>
+            <span className="text-[10px] text-white/25 pb-0.5 ml-auto">{periodLabel}</span>
           </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.4)' }}>
-            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${progressPct}%`, background: barColor }}/>
-          </div>
-          <div className="flex justify-between text-[10px] mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
-            <span>{onPace && progressPct < 100 ? '✓ On pace' : !onPace ? 'Behind pace' : ''}</span>
-            <span>{progressPct}% to goal</span>
+          <div className="text-xs" style={{ color: progressPct >= 100 ? '#f9c923' : onPace ? '#4ade80' : 'rgba(255,255,255,0.35)' }}>
+            {progressPct >= 100 ? '⚽ Goal reached!' : onPace ? '✓ On pace' : `${Math.max(0, goal.targetTotal - total)} more needed`}
           </div>
         </div>
       )}

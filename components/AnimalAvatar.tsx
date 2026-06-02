@@ -18,11 +18,12 @@ export const ANIMAL_NAMES: Record<AnimalKind, string> = {
   tiger:   'Tiger',
   cheetah: 'Cheetah',
   lizard:  'Lizard',
+  horse:   'Horse',
 };
 
 export const ALL_ANIMALS: AnimalKind[] = [
   'goose','goat','panda','giraffe','cat',
-  'gorilla','sheep','tiger','cheetah','lizard',
+  'gorilla','sheep','tiger','cheetah','lizard','horse',
 ];
 
 export default function AnimalAvatar({ animal, size = 80, className = '' }: Props) {

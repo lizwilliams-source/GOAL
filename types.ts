@@ -1,6 +1,6 @@
 export type AnimalKind =
   | 'goose' | 'goat' | 'panda' | 'giraffe' | 'cat'
-  | 'gorilla' | 'sheep' | 'tiger' | 'cheetah' | 'lizard';
+  | 'gorilla' | 'sheep' | 'tiger' | 'cheetah' | 'lizard' | 'horse';
 
 export interface RateGoal {
   type: 'rate';

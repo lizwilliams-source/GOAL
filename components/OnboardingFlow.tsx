@@ -129,7 +129,10 @@ export default function OnboardingFlow({ takenAvatars, onComplete }: Props) {
     <div className="min-h-screen pitch-bg grass-lines flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         <div className="text-center mb-5">
-          <h1 className="text-3xl text-yellow-400 tracking-widest mb-1" style={{ fontFamily:'Black Han Sans', textShadow:'0 2px 16px rgba(249,201,35,0.4)' }}>GOOOOOOOOOOOOOOOOOOAL</h1>
+          <h1 className="text-3xl text-yellow-400 tracking-widest mb-1" style={{ fontFamily:'Black Han Sans', textShadow:'0 2px 16px rgba(249,201,35,0.4)' }}>
+            <span className="sm:hidden">GOOOOOAL</span>
+            <span className="hidden sm:inline">GOOOOOOOOOOOOOOOOOOAL</span>
+          </h1>
           <p className="text-white/35 text-[10px] tracking-widest uppercase">
             {step==='avatar'?'Step 1 of 3 — Pick your player':step==='name'?'Step 2 of 3 — Name your player':'Step 3 of 3 — Set your goals'}
           </p>

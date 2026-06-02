@@ -187,7 +187,7 @@ export default function Home() {
           <div className="mt-10 text-center">
             <div className="h-px bg-white/8 mb-4"/>
             <div className="inline-flex items-center gap-2 text-white/15 text-[10px] tracking-widest uppercase">
-              <SoccerBall size={12}/><span>GOOOOOOOOOOOOOOOOOOAL</span><SoccerBall size={12}/>
+              <span>GOOOOOOOOOOOOOOOOOOAL</span>
             </div>
           </div>
         </main>

@@ -161,7 +161,7 @@ export function getHabitStreak(goal: HabitGoal): { current: number; best: number
       if (l.loggedAt) {
         const diffMs = new Date(l.loggedAt).getTime() - new Date(l.date + 'T23:59:59').getTime();
         const diffDays = diffMs / (1000 * 60 * 60 * 24);
-        if (diffDays > 1) return false;
+        if (diffDays > 2) return false;
       }
       return true;
     })

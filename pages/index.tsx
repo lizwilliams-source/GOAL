@@ -290,63 +290,104 @@ export default function Home() {
           )}
           </div>{/* end flex-1 */}
 
-          {/* Desktop sidebar — dashboard + log */}
-          <aside className="hidden md:block w-80 flex-shrink-0 space-y-4">
-            {/* Team ranking */}
-            <div className="rounded-2xl p-4" style={{ background:'rgba(0,0,0,0.35)', border:'1px solid rgba(249,201,35,0.15)' }}>
-              <div className="text-xs font-black text-white/50 uppercase tracking-widest mb-3" style={{ fontFamily:'Oswald' }}>⚽ Standings</div>
-              <div className="space-y-2">
-                {data && [...data.players].sort((a,b) => getPlayerOverall(b)-getPlayerOverall(a)).map((p,i) => {
-                  const score = getPlayerOverall(p);
-                  const cumulativeGoals = p.goals.filter((g): g is CumulativeGoal => g.type === 'cumulative');
-                  const onPace = cumulativeGoals.length > 0 && cumulativeGoals.every(g => getCumulativeProgress(g).onPace);
-                  const color = score >= 100 ? '#f9c923' : onPace ? '#4ade80' : score >= 70 ? '#4ade80' : score >= 40 ? '#60a5fa' : '#a78bfa';
-                  const medals = ['🥇','🥈','🥉'];
-                  return (
-                    <div key={p.id} className="flex items-center gap-2.5">
-                      <span className="text-sm w-5 text-center flex-shrink-0">{medals[i] ?? <span className="text-white/30 text-xs">{i+1}</span>}</span>
-                      <AnimalAvatarImg animal={p.avatar} size={30}/>
-                      <span className="text-xs font-bold text-white/80 flex-1 truncate" style={{ fontFamily:'Oswald' }}>{p.name}</span>
-                      <span className="text-xs font-black flex-shrink-0" style={{ color, fontFamily:'Oswald' }}>{score}%</span>
-                    </div>
-                  );
-                })}
-              </div>
-              <button onClick={() => router.push('/dashboard')}
-                className="mt-3 w-full py-1.5 rounded-lg text-xs font-bold text-center transition-colors hover:bg-yellow-400/20"
-                style={{ color:'rgba(249,201,35,0.6)', border:'1px solid rgba(249,201,35,0.15)' }}>
-                Full dashboard →
-              </button>
-            </div>
-            {/* Recent activity */}
-            <div className="rounded-2xl p-4" style={{ background:'rgba(0,0,0,0.35)', border:'1px solid rgba(255,255,255,0.08)' }}>
-              <div className="text-xs font-black text-white/50 uppercase tracking-widest mb-3" style={{ fontFamily:'Oswald' }}>⚡ Recent</div>
-              {sideActivity.length === 0 ? (
-                <div className="text-xs text-white/25 text-center py-3">No activity yet</div>
-              ) : (
-                <div className="space-y-2">
-                  {sideActivity.map((item, i) => {
-                    const colors: Record<string, string> = { habit:'#4ade80', consistency:'#fb923c', rate:'#60a5fa', cumulative:'#a78bfa' };
-                    const color = colors[item.goalType] ?? '#f9c923';
-                    return (
-                      <div key={item.id ?? i} className="flex items-center gap-2">
-                        <AnimalAvatarImg animal={item.playerAvatar as AnimalKind} size={26}/>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[10px] font-bold text-white/70 truncate" style={{ fontFamily:'Oswald' }}>{item.playerName}</div>
-                          <div className="text-[9px] truncate" style={{ color }}>{item.goalEmoji} {item.summary}</div>
+          {/* Desktop sidebar — podium + standings */}
+          {data && data.players.length > 0 && (() => {
+            const sorted = [...data.players].sort((a,b) => getPlayerOverall(b) - getPlayerOverall(a));
+            // Group tied players onto same podium platform
+            const groups: Player[][] = [];
+            for (const p of sorted) {
+              const score = getPlayerOverall(p);
+              if (!groups.length || getPlayerOverall(groups[groups.length-1][0]) !== score) groups.push([p]);
+              else groups[groups.length-1].push(p);
+            }
+            const platformGroups = groups.slice(0, 3);
+            const rest = groups.slice(3).flat();
+            const podiumColors = ['#f9c923','#94a3b8','#cd7c3a'];
+            const podiumHeights = [100, 72, 56];
+            const medals = ['🥇','🥈','🥉'];
+            // Display order: 2nd | 1st | 3rd
+            const displayOrder = platformGroups.length === 1
+              ? [undefined, platformGroups[0], undefined]
+              : platformGroups.length === 2
+              ? [platformGroups[1], platformGroups[0], undefined]
+              : [platformGroups[1], platformGroups[0], platformGroups[2]];
+            return (
+              <aside className="hidden md:block w-72 flex-shrink-0 space-y-3">
+                {/* Podium */}
+                <div className="rounded-2xl p-4 relative overflow-hidden" style={{ background:'rgba(0,0,0,0.35)', border:'2px solid rgba(249,201,35,0.2)' }}>
+                  <div className="absolute inset-0 opacity-5" style={{ backgroundImage:'repeating-linear-gradient(90deg,transparent,transparent 30px,rgba(255,255,255,0.5) 30px,rgba(255,255,255,0.5) 31px),repeating-linear-gradient(0deg,transparent,transparent 30px,rgba(255,255,255,0.5) 30px,rgba(255,255,255,0.5) 31px)' }}/>
+                  <div className="text-xs font-black text-yellow-400/70 uppercase tracking-widest mb-4 relative z-10" style={{ fontFamily:'Oswald' }}>⚽ Podium</div>
+                  <div className="flex items-end justify-center gap-1.5 relative z-10">
+                    {displayOrder.map((group, si) => {
+                      const ri = si === 0 ? 1 : si === 1 ? 0 : 2;
+                      const color = podiumColors[ri];
+                      const height = podiumHeights[ri];
+                      const avatarSize = ri === 0 ? (group && group.length > 1 ? 36 : 52) : (group && group.length > 1 ? 30 : 40);
+                      return (
+                        <div key={si} className="flex flex-col items-center flex-1">
+                          {group ? (
+                            <>
+                              {ri === 0 && <div className="text-base mb-0.5">👑</div>}
+                              <div className={`flex ${group.length > 1 ? 'gap-0.5 flex-wrap justify-center' : ''} mb-1`}>
+                                {group.map(p => (
+                                  <div key={p.id} className="flex flex-col items-center">
+                                    <AnimalAvatarImg animal={p.avatar} size={avatarSize}/>
+                                    <div className="text-[8px] font-black text-center truncate mt-0.5" style={{ maxWidth: avatarSize + 4, color }}>{p.name.split(' ')[0]}</div>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="text-xs font-black text-center mb-1" style={{ fontFamily:'Black Han Sans', color }}>{getPlayerOverall(group[0])}%</div>
+                            </>
+                          ) : <div style={{ height: ri === 0 ? 80 : 64 }}/>}
+                          <div className="w-full rounded-t-md flex flex-col items-center justify-end pb-2 relative overflow-hidden"
+                            style={{ height, background:`linear-gradient(180deg,${color}22,${color}44)`, border:`1.5px solid ${color}55`, borderBottom:'none' }}>
+                            <span className="text-lg relative z-10">{medals[ri]}</span>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                  <button onClick={() => router.push('/log')}
-                    className="mt-1 w-full py-1.5 rounded-lg text-xs font-bold text-center"
-                    style={{ color:'rgba(255,255,255,0.3)', border:'1px solid rgba(255,255,255,0.08)' }}>
-                    See all →
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Standings */}
+                <div className="rounded-2xl p-4" style={{ background:'rgba(0,0,0,0.35)', border:'1px solid rgba(255,255,255,0.08)' }}>
+                  <div className="text-xs font-black text-white/50 uppercase tracking-widest mb-3" style={{ fontFamily:'Oswald' }}>📋 Standings</div>
+                  <div className="space-y-2">
+                    {sorted.map((p, i) => {
+                      const score = getPlayerOverall(p);
+                      const cumulativeGoals = p.goals.filter((g): g is CumulativeGoal => g.type === 'cumulative');
+                      const onPace = cumulativeGoals.length > 0 && cumulativeGoals.every(g => getCumulativeProgress(g).onPace);
+                      const color = score >= 100 ? '#f9c923' : onPace ? '#4ade80' : score >= 70 ? '#4ade80' : score >= 40 ? '#60a5fa' : '#a78bfa';
+                      return (
+                        <div key={p.id} className="flex items-center gap-2">
+                          <span className="text-[10px] text-white/30 font-bold w-4 text-right flex-shrink-0">{i + 1}</span>
+                          <AnimalAvatarImg animal={p.avatar} size={28}/>
+                          <span className="text-xs font-bold text-white/80 flex-1 truncate" style={{ fontFamily:'Oswald' }}>{p.name}</span>
+                          <span className="text-xs font-black flex-shrink-0" style={{ color, fontFamily:'Oswald' }}>{score}%</span>
+                        </div>
+                      );
+                    })}
+                    {rest.map((p, i) => {
+                      const score = getPlayerOverall(p);
+                      return (
+                        <div key={p.id} className="flex items-center gap-2">
+                          <span className="text-[10px] text-white/30 font-bold w-4 text-right flex-shrink-0">{platformGroups.reduce((s,g) => s+g.length,0) + i + 1}</span>
+                          <AnimalAvatarImg animal={p.avatar} size={28}/>
+                          <span className="text-xs font-bold text-white/80 flex-1 truncate" style={{ fontFamily:'Oswald' }}>{p.name}</span>
+                          <span className="text-xs font-black text-white/50 flex-shrink-0" style={{ fontFamily:'Oswald' }}>{score}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button onClick={() => router.push('/dashboard')}
+                    className="mt-3 w-full py-1.5 rounded-lg text-xs font-bold text-center hover:bg-yellow-400/10 transition-colors"
+                    style={{ color:'rgba(249,201,35,0.5)', border:'1px solid rgba(249,201,35,0.15)' }}>
+                    Full dashboard →
                   </button>
                 </div>
-              )}
-            </div>
-          </aside>
+              </aside>
+            );
+          })()}
         </main>
         <TabBar active="home"/>
 

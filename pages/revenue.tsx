@@ -381,7 +381,7 @@ export default function Revenue() {
         <LogModal
           player={logFor}
           goalId={logFor.goals.find(g => g.type === 'cumulative' && (g as CumulativeGoal).unit === '$')?.id ?? null}
-          hasTarget={(logFor.goals.find(g => g.type === 'cumulative' && (g as CumulativeGoal).unit === '$') as CumulativeGoal | undefined)?.targetTotal > 0}
+          hasTarget={((logFor.goals.find(g => g.type === 'cumulative' && (g as CumulativeGoal).unit === '$') as CumulativeGoal | undefined)?.targetTotal ?? 0) > 0}
           onClose={() => setLogFor(null)}
           onSubmit={handleLog}/>
       )}

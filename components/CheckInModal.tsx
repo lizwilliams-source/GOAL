@@ -177,7 +177,7 @@ function RateCheckIn({ goal, onSubmit }: { goal: RateGoal; onSubmit: (made: numb
         </div>
       )}
       <textarea placeholder="Note (optional)" value={note} onChange={e => setNote(e.target.value)} className="w-full resize-none mb-4" rows={2}/>
-      <button onClick={() => { if (m > 0 && a > 0 && m <= a) onSubmit(m, a, note || undefined); }} disabled={!(m > 0 && a > 0 && m <= a)}
+      <button onClick={() => { if (made !== '' && m >= 0 && a > 0 && m <= a) onSubmit(m, a, note || undefined); }} disabled={!(made !== '' && m >= 0 && a > 0 && m <= a)}
         className="w-full py-2.5 rounded-xl font-black text-sm disabled:opacity-40 hover:scale-105 transition-transform"
         style={{ background: '#f9c923', color: '#1a1a1a', fontFamily: 'Oswald' }}>
         ⚽ LOG SESSION

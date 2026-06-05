@@ -32,34 +32,81 @@ function formatMoneyFull(n: number): string {
   return '$' + Math.round(n).toLocaleString();
 }
 
-interface MoneyDrop { id: number; x: number; delay: number; size: number; duration: number }
+const MONEY_EMOJIS = ['💰','💵','💸','🤑','💴','💶','💷'];
+const ANIMS = ['mf-straight','mf-left','mf-right','mf-drift'];
+
+interface MoneyDrop {
+  id: number; emoji: string; x: number; delay: number; size: number; duration: number; anim: string;
+}
 
 function MoneyRain() {
-  const drops: MoneyDrop[] = Array.from({ length: 24 }, (_, i) => ({
+  const drops: MoneyDrop[] = Array.from({ length: 70 }, (_, i) => ({
     id: i,
-    x: Math.random() * 100,
-    delay: Math.random() * 1.2,
-    size: 20 + Math.random() * 24,
-    duration: 1.4 + Math.random() * 1,
+    emoji: MONEY_EMOJIS[Math.floor(Math.random() * MONEY_EMOJIS.length)],
+    x: Math.random() * 110 - 5,
+    delay: Math.random() * 2.5,
+    size: 18 + Math.random() * 42,
+    duration: 1.2 + Math.random() * 1.8,
+    anim: ANIMS[Math.floor(Math.random() * ANIMS.length)],
   }));
+
   return (
     <div className="fixed inset-0 z-50 pointer-events-none overflow-hidden">
       <style>{`
-        @keyframes moneyfall {
-          0%   { transform: translateY(-80px) rotate(-15deg); opacity: 1; }
-          80%  { opacity: 1; }
-          100% { transform: translateY(110vh) rotate(25deg); opacity: 0; }
+        @keyframes goldflash {
+          0%   { opacity: 0; }
+          8%   { opacity: 0.45; }
+          100% { opacity: 0; }
+        }
+        @keyframes textpop {
+          0%   { transform: translate(-50%,-50%) scale(0) rotate(-8deg); opacity: 0; }
+          35%  { transform: translate(-50%,-50%) scale(1.25) rotate(3deg); opacity: 1; }
+          55%  { transform: translate(-50%,-50%) scale(0.92) rotate(-1deg); opacity: 1; }
+          70%  { transform: translate(-50%,-50%) scale(1.05) rotate(0deg); opacity: 1; }
+          85%  { transform: translate(-50%,-50%) scale(1) rotate(0deg); opacity: 1; }
+          100% { transform: translate(-50%,-50%) scale(1.1) rotate(0deg); opacity: 0; }
+        }
+        @keyframes mf-straight {
+          0%   { transform: translateY(-90px) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(112vh) rotate(900deg); opacity: 0.1; }
+        }
+        @keyframes mf-left {
+          0%   { transform: translateY(-90px) translateX(0px) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(112vh) translateX(-180px) rotate(-720deg); opacity: 0.1; }
+        }
+        @keyframes mf-right {
+          0%   { transform: translateY(-90px) translateX(0px) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(112vh) translateX(180px) rotate(720deg); opacity: 0.1; }
+        }
+        @keyframes mf-drift {
+          0%   { transform: translateY(-90px) translateX(0px) rotate(0deg); opacity: 1; }
+          25%  { transform: translateY(25vh) translateX(60px) rotate(180deg); opacity: 1; }
+          60%  { transform: translateY(60vh) translateX(-40px) rotate(480deg); opacity: 1; }
+          100% { transform: translateY(112vh) translateX(80px) rotate(810deg); opacity: 0.1; }
         }
       `}</style>
+
+      {/* gold screen flash */}
+      <div style={{ position:'absolute', inset:0, background:'#f9c923', animation:'goldflash 1s ease-out forwards', pointerEvents:'none' }}/>
+
+      {/* big text */}
+      <div style={{ position:'absolute', top:'42%', left:'50%', animation:'textpop 2.2s ease-out 0.05s forwards', opacity:0, textAlign:'center', zIndex:10 }}>
+        <div style={{ fontFamily:'Black Han Sans', fontSize:'clamp(52px,12vw,88px)', color:'#f9c923', textShadow:'0 0 60px rgba(249,201,35,0.9), 0 5px 0 rgba(0,0,0,0.6)', lineHeight:1, letterSpacing:'0.05em' }}>
+          MONEY<br/>MOVE
+        </div>
+        <div style={{ fontSize:'clamp(36px,8vw,56px)', marginTop:8 }}>🤑</div>
+      </div>
+
       {drops.map(d => (
         <span key={d.id} style={{
           position: 'absolute',
           left: `${d.x}%`,
-          top: 0,
+          top: '-90px',
           fontSize: d.size,
-          animation: `moneyfall ${d.duration}s ease-in ${d.delay}s forwards`,
+          animation: `${d.anim} ${d.duration}s ease-in ${d.delay}s forwards`,
           opacity: 0,
-        }}>💰</span>
+          display: 'inline-block',
+        }}>{d.emoji}</span>
       ))}
     </div>
   );

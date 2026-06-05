@@ -6,26 +6,24 @@ import { loadData, ensureRevenueGoal, logCumulative, setRevenueTarget } from '..
 import { getCumulativeProgress } from '../lib/storage';
 import AnimalAvatarImg from '../components/AnimalAvatar';
 
+const MONEY_TRACKS = [
+  '/audio/i-get-money.mp3',
+  '/audio/get-in-with-me.mp3',
+  '/audio/headlines.mp3',
+  '/audio/gotta-have-it.mp3',
+  '/audio/if-i-cant.mp3',
+  '/audio/transportin.mp3',
+  '/audio/a-milli.mp3',
+  '/audio/dreams-and-nightmares.mp3',
+  '/audio/ride-wit-me.mp3',
+];
+
 function playMoneySound() {
   if (typeof window === 'undefined') return;
-  try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    // cha-ching: two quick high notes + a shimmer
-    const notes = [1318.5, 1567.98, 1318.5, 2093];
-    const times  = [0, 0.08, 0.18, 0.28];
-    notes.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.frequency.value = freq;
-      osc.type = 'triangle';
-      const t = ctx.currentTime + times[i];
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.25, t + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
-      osc.start(t); osc.stop(t + 0.4);
-    });
-  } catch { /* audio blocked */ }
+  const src = MONEY_TRACKS[Math.floor(Math.random() * MONEY_TRACKS.length)];
+  const audio = new Audio(src);
+  audio.volume = 0.8;
+  audio.play().catch(() => {});
 }
 
 function formatMoney(n: number): string {

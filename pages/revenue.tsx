@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { Player, CumulativeGoal } from '../types';
-import { loadData, ensureRevenueGoal, logCumulative, setRevenueTarget } from '../lib/supabaseStorage';
+import { loadData, ensureRevenueGoal, logCumulative, setRevenueTarget, deleteCumulativeLog } from '../lib/supabaseStorage';
 import { getCumulativeProgress } from '../lib/storage';
 import AnimalAvatarImg from '../components/AnimalAvatar';
 
@@ -203,6 +203,7 @@ export default function Revenue() {
   const [logFor, setLogFor] = useState<Player | null>(null);
   const [editTargetFor, setEditTargetFor] = useState<{ player: Player; goalId: string; target: number } | null>(null);
   const [raining, setRaining] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     const d = await loadData();
@@ -241,6 +242,11 @@ export default function Revenue() {
     playMoneySound();
     setRaining(true);
     setTimeout(() => setRaining(false), 3000);
+  };
+
+  const handleDeleteLog = async (logId: string) => {
+    await deleteCumulativeLog(logId);
+    await refresh();
   };
 
   const handleSetTarget = async (target: number) => {
@@ -368,6 +374,37 @@ export default function Revenue() {
                       </div>
                     </div>
                   )}
+                  {row.revenueGoal && row.revenueGoal.logs.length > 0 && (() => {
+                    const monthStr = new Date().toISOString().slice(0, 7);
+                    const monthLogs = [...row.revenueGoal.logs]
+                      .filter(l => l.date.startsWith(monthStr))
+                      .sort((a, b) => b.date.localeCompare(a.date));
+                    if (monthLogs.length === 0) return null;
+                    const isExpanded = expandedId === row.player.id;
+                    return (
+                      <div className="mt-2 border-t border-white/5 pt-2">
+                        <button onClick={() => setExpandedId(isExpanded ? null : row.player.id)}
+                          className="text-[10px] text-white/25 hover:text-white/50 transition-colors">
+                          {isExpanded ? '▲ Hide' : `▼ ${monthLogs.length} entr${monthLogs.length === 1 ? 'y' : 'ies'}`}
+                        </button>
+                        {isExpanded && (
+                          <div className="mt-2 space-y-1">
+                            {monthLogs.map((l, li) => (
+                              <div key={l.id ?? li} className="flex items-center gap-2 text-[11px]">
+                                <span className="text-white/30">{new Date(l.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                                <span className="font-bold text-white/70">{formatMoneyFull(l.amount)}</span>
+                                {l.note && <span className="text-white/30 truncate flex-1">&quot;{l.note}&quot;</span>}
+                                {l.id && (
+                                  <button onClick={() => handleDeleteLog(l.id!)}
+                                    className="ml-auto text-white/20 hover:text-red-400 transition-colors text-xs flex-shrink-0">✕</button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })}

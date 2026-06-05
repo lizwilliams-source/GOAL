@@ -32,7 +32,7 @@ export interface CumulativeGoal {
   unit: string;
   targetTotal: number;
   targetPeriod: 'weekly' | 'monthly';
-  logs: { date: string; amount: number; note?: string }[];
+  logs: { id?: string; date: string; amount: number; note?: string }[];
   createdAt: string; updatedAt: string;
 }
 

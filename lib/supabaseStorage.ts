@@ -48,7 +48,7 @@ export async function loadData(): Promise<AppData> {
         emoji: g.emoji ?? '🎯', unit: g.unit ?? 'items', targetTotal: g.target_total ?? 100,
         targetPeriod: (g.target_period === 'weekly' ? 'weekly' : 'monthly') as 'weekly' | 'monthly',
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        logs: (cumulativeLogs ?? []).filter((l: any) => l.goal_id === g.id).map((l: any) => ({ date: l.date, amount: l.amount, note: l.note ?? undefined })),
+        logs: (cumulativeLogs ?? []).filter((l: any) => l.goal_id === g.id).map((l: any) => ({ id: l.id, date: l.date, amount: l.amount, note: l.note ?? undefined })),
         createdAt: g.created_at, updatedAt: g.created_at,
       } as CumulativeGoal;
       return null;
@@ -189,6 +189,10 @@ export async function getRecentActivity(limit = 20): Promise<ActivityItem[]> {
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, limit);
 
   return all;
+}
+
+export async function deleteCumulativeLog(logId: string): Promise<void> {
+  await getSupabase().from('cumulative_logs').delete().eq('id', logId);
 }
 
 export async function ensureRevenueGoal(playerId: string): Promise<string> {

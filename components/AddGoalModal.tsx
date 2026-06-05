@@ -122,11 +122,6 @@ export default function AddGoalModal({ player, onAdd, onClose }: Props) {
               <div>
                 <label className="text-xs text-white/40 mb-1 block">Unit</label>
                 <input type="text" placeholder="calls, demos..." value={cumUnit} onChange={e=>setCumUnit(e.target.value)} className="w-full"/>
-                <button type="button" onClick={() => setCumUnit('$')}
-                  className="mt-1 text-[10px] px-2 py-0.5 rounded font-bold transition-all"
-                  style={{ background: cumUnit==='$'?'rgba(249,201,35,0.2)':'rgba(255,255,255,0.06)', color: cumUnit==='$'?'#f9c923':'rgba(255,255,255,0.3)', border:`1px solid ${cumUnit==='$'?'rgba(249,201,35,0.4)':'transparent'}` }}>
-                  💰 Revenue ($)
-                </button>
               </div>
             </div>
           </div>

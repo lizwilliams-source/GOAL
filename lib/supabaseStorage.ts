@@ -191,6 +191,23 @@ export async function getRecentActivity(limit = 20): Promise<ActivityItem[]> {
   return all;
 }
 
+export async function ensureRevenueGoal(playerId: string): Promise<string> {
+  const { data: existing } = await getSupabase()
+    .from('goals').select('id')
+    .eq('player_id', playerId).eq('type', 'cumulative').eq('unit', '$')
+    .maybeSingle();
+  if (existing) return (existing as { id: string }).id;
+  const { data } = await getSupabase()
+    .from('goals')
+    .insert({ player_id: playerId, type: 'cumulative', title: 'Revenue', description: '', emoji: '💰', unit: '$', target_total: 0 })
+    .select('id').single();
+  return (data as { id: string }).id;
+}
+
+export async function setRevenueTarget(goalId: string, target: number): Promise<void> {
+  await getSupabase().from('goals').update({ target_total: target }).eq('id', goalId);
+}
+
 export async function clearLog(goalId: string, goalType: string, date: string): Promise<void> {
   const tables: Record<string, string> = {
     rate: 'rate_logs', habit: 'habit_logs',

@@ -208,6 +208,11 @@ export default function Home() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <button onClick={() => router.push('/revenue')}
+                  className="text-xs px-3 py-1.5 rounded-lg font-bold hover:scale-105 transition-all"
+                  style={{ background:'rgba(249,201,35,0.15)', color:'#f9c923', border:'1px solid rgba(249,201,35,0.3)' }}>
+                  💰
+                </button>
                 <button onClick={() => router.push('/dashboard')}
                   className="text-xs px-3 py-1.5 rounded-lg font-bold hover:scale-105 transition-all"
                   style={{ background:'rgba(249,201,35,0.15)', color:'#f9c923', border:'1px solid rgba(249,201,35,0.3)' }}>

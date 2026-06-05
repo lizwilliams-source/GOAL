@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { Player, CumulativeGoal } from '../types';
 import { loadData } from '../lib/supabaseStorage';
 import { getCumulativeProgress } from '../lib/storage';
 import AnimalAvatarImg from '../components/AnimalAvatar';
-import TabBar from '../components/TabBar';
 
 function formatMoney(n: number): string {
   if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
@@ -17,6 +17,7 @@ function formatMoneyFull(n: number): string {
 }
 
 export default function Revenue() {
+  const router = useRouter();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -57,9 +58,16 @@ export default function Revenue() {
         <div style={{ background: '#071f09', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div className="h-1.5" style={{ background: 'linear-gradient(90deg,#f9c923,#d4a017,#f9c923)' }}/>
           <div className="max-w-2xl mx-auto px-4 py-4">
-            <h1 className="text-2xl font-black text-yellow-400 tracking-widest leading-none" style={{ fontFamily: 'Black Han Sans' }}>
-              💰 REVENUE
-            </h1>
+            <div className="flex items-center gap-3 mb-1">
+              <button onClick={() => router.push('/')}
+                className="text-xs px-2.5 py-1.5 rounded-lg font-bold"
+                style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}>
+                ← Back
+              </button>
+              <h1 className="text-2xl font-black text-yellow-400 tracking-widest leading-none" style={{ fontFamily: 'Black Han Sans' }}>
+                💰 REVENUE
+              </h1>
+            </div>
             <p className="text-white/35 text-[10px] tracking-wider uppercase mt-0.5">{month}</p>
 
             {!loading && teamTarget > 0 && (
@@ -154,7 +162,6 @@ export default function Revenue() {
           </div>
         )}
       </div>
-      <TabBar active="revenue"/>
     </>
   );
 }

@@ -1,14 +1,13 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 
-type Tab = 'home' | 'dashboard' | 'log' | 'revenue';
+type Tab = 'home' | 'dashboard' | 'log';
 
 export default function TabBar({ active }: { active: Tab }) {
   const router = useRouter();
   const tabs: { id: Tab; label: string; icon: string; path: string }[] = [
     { id: 'home',      label: 'Home',      icon: '⚽', path: '/' },
     { id: 'dashboard', label: 'Dashboard', icon: '📊', path: '/dashboard' },
-    { id: 'revenue',   label: 'Revenue',   icon: '💰', path: '/revenue' },
     { id: 'log',       label: 'Log',       icon: '⚡', path: '/log' },
   ];
   return (

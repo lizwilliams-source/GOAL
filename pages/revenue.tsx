@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { Player, CumulativeGoal } from '../types';
@@ -18,12 +18,8 @@ const MONEY_TRACKS = [
   '/audio/ride-wit-me.mp3',
 ];
 
-function playMoneySound() {
-  if (typeof window === 'undefined') return;
-  const src = MONEY_TRACKS[Math.floor(Math.random() * MONEY_TRACKS.length)];
-  const audio = new Audio(src);
-  audio.volume = 0.8;
-  audio.play().catch(() => {});
+function pickRandomTrack() {
+  return MONEY_TRACKS[Math.floor(Math.random() * MONEY_TRACKS.length)];
 }
 
 function formatMoney(n: number): string {
@@ -204,6 +200,9 @@ export default function Revenue() {
   const [editTargetFor, setEditTargetFor] = useState<{ player: Player; goalId: string; target: number } | null>(null);
   const [raining, setRaining] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [trackActive, setTrackActive] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const refresh = useCallback(async () => {
     const d = await loadData();
@@ -239,7 +238,14 @@ export default function Revenue() {
     if (targetAmount !== null && targetAmount > 0) await setRevenueTarget(goalId, targetAmount);
     setLogFor(null);
     await refresh();
-    playMoneySound();
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    const audio = new Audio(pickRandomTrack());
+    audio.volume = 0.8;
+    audioRef.current = audio;
+    audio.play().catch(() => {});
+    audio.onended = () => { setTrackActive(false); setPaused(false); audioRef.current = null; };
+    setTrackActive(true);
+    setPaused(false);
     setRaining(true);
     setTimeout(() => setRaining(false), 3000);
   };
@@ -419,6 +425,23 @@ export default function Revenue() {
           hasTarget={((logFor.goals.find(g => g.type === 'cumulative' && (g as CumulativeGoal).unit === '$') as CumulativeGoal | undefined)?.targetTotal ?? 0) > 0}
           onClose={() => setLogFor(null)}
           onSubmit={handleLog}/>
+      )}
+
+      {trackActive && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded-full shadow-2xl"
+          style={{ background: '#0d3b11', border: '2px solid rgba(249,201,35,0.4)' }}>
+          <span className="text-sm">🎵</span>
+          <button onClick={() => {
+            if (!audioRef.current) return;
+            if (paused) { audioRef.current.play().catch(() => {}); setPaused(false); }
+            else { audioRef.current.pause(); setPaused(true); }
+          }}
+            className="text-xl hover:scale-110 transition-transform">
+            {paused ? '▶️' : '⏸️'}
+          </button>
+          <button onClick={() => { audioRef.current?.pause(); audioRef.current = null; setTrackActive(false); setPaused(false); }}
+            className="text-xs text-white/30 hover:text-white/70 transition-colors">✕</button>
+        </div>
       )}
 
       {editTargetFor && (

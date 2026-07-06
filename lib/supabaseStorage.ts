@@ -22,29 +22,30 @@ export async function loadData(): Promise<AppData> {
   const mappedPlayers: Player[] = (players ?? []).map((p: any) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const playerGoals: Goal[] = (goals ?? []).filter((g: any) => g.player_id === p.id).map((g: any): Goal | null => {
+      const inferredSlot = (g.slot ?? (g.type === 'habit' || g.type === 'consistency' ? 'daily' : 'monthly')) as 'daily' | 'weekly' | 'monthly';
       if (g.type === 'rate') return {
-        type: 'rate', id: g.id, title: g.title, description: g.description ?? '',
+        type: 'rate', slot: inferredSlot, id: g.id, title: g.title, description: g.description ?? '',
         emoji: g.emoji ?? '🎯', unit: g.unit ?? 'rate', targetRate: g.target_rate ?? 15,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         logs: (consistencyLogs ?? []).filter((l: any) => l.goal_id === g.id).map((l: any) => ({ date: l.date, made: l.handled, attempts: l.total, note: l.note ?? undefined })),
         createdAt: g.created_at, updatedAt: g.created_at,
       } as RateGoal;
       if (g.type === 'habit') return {
-        type: 'habit', id: g.id, title: g.title, description: g.description ?? '',
+        type: 'habit', slot: inferredSlot, id: g.id, title: g.title, description: g.description ?? '',
         emoji: g.emoji ?? '🎯',
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         logs: (habitLogs ?? []).filter((l: any) => l.goal_id === g.id).map((l: any) => ({ date: l.date, completed: l.completed, note: l.note ?? undefined, loggedAt: l.created_at ?? undefined })),
         createdAt: g.created_at, updatedAt: g.created_at,
       } as HabitGoal;
       if (g.type === 'consistency') return {
-        type: 'consistency', id: g.id, title: g.title, description: g.description ?? '',
+        type: 'consistency', slot: inferredSlot, id: g.id, title: g.title, description: g.description ?? '',
         emoji: g.emoji ?? '🎯', targetRate: g.target_rate ?? 80,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         logs: (consistencyLogs ?? []).filter((l: any) => l.goal_id === g.id).map((l: any) => ({ date: l.date, handled: l.handled, total: l.total, note: l.note ?? undefined })),
         createdAt: g.created_at, updatedAt: g.created_at,
       } as ConsistencyGoal;
       if (g.type === 'cumulative') return {
-        type: 'cumulative', id: g.id, title: g.title, description: g.description ?? '',
+        type: 'cumulative', slot: inferredSlot, id: g.id, title: g.title, description: g.description ?? '',
         emoji: g.emoji ?? '🎯', unit: g.unit ?? 'items', targetTotal: g.target_total ?? 100,
         targetPeriod: (g.target_period === 'weekly' ? 'weekly' : 'monthly') as 'weekly' | 'monthly',
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -85,7 +86,7 @@ export async function deletePlayer(playerId: string): Promise<void> {
 
 export async function addGoal(playerId: string, goal: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
   const row: Record<string, unknown> = {
-    player_id: playerId, type: goal.type,
+    player_id: playerId, type: goal.type, slot: goal.slot,
     title: goal.title, description: goal.description, emoji: goal.emoji,
   };
   if (goal.type === 'rate') {

@@ -8,6 +8,7 @@ interface Props {
   onClose: () => void;
 }
 
+type Slot = 'daily' | 'weekly' | 'monthly';
 type GoalType = 'rate' | 'habit' | 'consistency' | 'cumulative';
 
 const TYPE_INFO: Record<GoalType, { color: string; label: string; desc: string }> = {
@@ -17,24 +18,26 @@ const TYPE_INFO: Record<GoalType, { color: string; label: string; desc: string }
   cumulative:  { color: '#a78bfa', label: '🔢 Cumulative',     desc: 'Add up totals, track pace vs target' },
 };
 
+const SLOT_TYPES: Record<Slot, GoalType[]> = {
+  daily:   ['habit', 'consistency'],
+  weekly:  ['rate', 'cumulative'],
+  monthly: ['rate', 'cumulative'],
+};
+
+const SLOT_LABELS: Record<Slot, string> = {
+  daily: 'Add your Daily Goal',
+  weekly: 'Add your Weekly Goal',
+  monthly: 'Add your Monthly Goal',
+};
+
 const EMOJIS = ['🎯','💼','📈','💬','📋','⚡','🔥','💪','🏆','📞','🤝','💰','🚀','⭐','🎪'];
 
 export default function AddGoalModal({ player, onAdd, onClose }: Props) {
-  const hasDaily = player.goals.some(g => g.type === 'habit' || g.type === 'consistency');
-  const hasWeekly = player.goals.some(g => g.type === 'rate' || g.type === 'cumulative');
+  const takenSlots = new Set(player.goals.map(g => g.slot));
+  const missingSlot: Slot = (['daily', 'weekly', 'monthly'] as Slot[]).find(s => !takenSlots.has(s)) ?? 'daily';
+  const allowedTypes = SLOT_TYPES[missingSlot];
 
-  const allowedTypes: GoalType[] = [
-    ...(!hasDaily ? ['habit', 'consistency'] as GoalType[] : []),
-    ...(!hasWeekly ? ['rate', 'cumulative'] as GoalType[] : []),
-  ];
-
-  const slotLabel = !hasDaily && !hasWeekly ? 'Add a Goal'
-    : !hasDaily ? 'Add your Daily Goal'
-    : 'Add your Weekly Goal';
-
-  const defaultType = !hasDaily ? 'habit' : 'cumulative';
-
-  const [type, setType] = useState<GoalType>(defaultType);
+  const [type, setType] = useState<GoalType>(allowedTypes[0]);
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [emoji, setEmoji] = useState('🎯');
@@ -42,18 +45,19 @@ export default function AddGoalModal({ player, onAdd, onClose }: Props) {
   const [targetRate, setTargetRate] = useState('15');
   const [targetTotal, setTargetTotal] = useState('');
   const [cumUnit, setCumUnit] = useState('');
-  const [cumPeriod, setCumPeriod] = useState<'monthly' | 'weekly'>('monthly');
+  const [cumPeriod, setCumPeriod] = useState<'monthly' | 'weekly'>(missingSlot === 'weekly' ? 'weekly' : 'monthly');
 
   const submit = () => {
     if (!title.trim()) return;
+    const base = { slot: missingSlot, title: title.trim(), description: desc.trim(), emoji, logs: [] };
     if (type === 'rate') {
-      onAdd({ type: 'rate', title: title.trim(), description: desc.trim(), emoji, unit: unit||'rate', targetRate: parseInt(targetRate)||15, logs: [] });
+      onAdd({ ...base, type: 'rate', unit: unit||'rate', targetRate: parseInt(targetRate)||15 });
     } else if (type === 'consistency') {
-      onAdd({ type: 'consistency', title: title.trim(), description: desc.trim(), emoji, targetRate: parseInt(targetRate)||80, logs: [] });
+      onAdd({ ...base, type: 'consistency', targetRate: parseInt(targetRate)||80 });
     } else if (type === 'cumulative') {
-      onAdd({ type: 'cumulative', title: title.trim(), description: desc.trim(), emoji, targetTotal: parseFloat(targetTotal)||100, unit: cumUnit||'items', targetPeriod: cumPeriod, logs: [] });
+      onAdd({ ...base, type: 'cumulative', targetTotal: parseFloat(targetTotal)||100, unit: cumUnit||'items', targetPeriod: cumPeriod });
     } else {
-      onAdd({ type: 'habit', title: title.trim(), description: desc.trim(), emoji, logs: [] });
+      onAdd({ ...base, type: 'habit' });
     }
   };
 
@@ -71,7 +75,7 @@ export default function AddGoalModal({ player, onAdd, onClose }: Props) {
           <AnimalAvatarImg animal={player.avatar} size={44}/>
           <div className="flex-1">
             <div className="font-black text-white text-sm" style={{ fontFamily: 'Oswald' }}>{player.name}</div>
-            <div className="text-xs text-white/50">{slotLabel}</div>
+            <div className="text-xs text-white/50">{SLOT_LABELS[missingSlot]}</div>
           </div>
           <button onClick={onClose} className="text-white/30 hover:text-white text-xl p-1">✕</button>
         </div>
@@ -88,7 +92,7 @@ export default function AddGoalModal({ player, onAdd, onClose }: Props) {
         <input type="text" placeholder="Goal title" value={title} onChange={e=>setTitle(e.target.value)} className="w-full mb-2" autoFocus/>
         <textarea placeholder="What does success look like?" value={desc} onChange={e=>setDesc(e.target.value)} className="w-full resize-none mb-3" rows={2}/>
 
-        <div className={`grid gap-2 mb-3 ${allowedTypes.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+        <div className="grid grid-cols-2 gap-2 mb-3">
           {allowedTypes.map(t => (
             <button key={t} onClick={() => setType(t)}
               className="p-2 rounded-lg text-xs font-bold text-center transition-all"

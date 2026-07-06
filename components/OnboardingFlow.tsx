@@ -9,7 +9,7 @@ interface Props {
 }
 
 type Step = 'avatar' | 'name' | 'goals';
-
+type Slot = 'daily' | 'weekly' | 'monthly';
 type GoalType = 'rate' | 'habit' | 'consistency' | 'cumulative';
 
 const TYPE_INFO: Record<GoalType, { color: string; label: string; desc: string }> = {
@@ -19,13 +19,16 @@ const TYPE_INFO: Record<GoalType, { color: string; label: string; desc: string }
   cumulative:  { color: '#a78bfa', label: '🔢 Cumulative',     desc: 'Add up totals, track pace vs target' },
 };
 
+const SLOT_TYPES: Record<Slot, GoalType[]> = {
+  daily:   ['habit', 'consistency'],
+  weekly:  ['rate', 'cumulative'],
+  monthly: ['rate', 'cumulative'],
+};
+
 const EMOJIS = ['🎯','💼','📈','💬','📋','⚡','🔥','💪','🏆','📞','🤝','💰','🚀','⭐','🎪'];
 
-function CustomForm({ slot, onAdd }: { slot: 'daily' | 'weekly'; onAdd: (g: Goal) => void }) {
-  const dailyTypes: GoalType[] = ['habit', 'consistency'];
-  const weeklyTypes: GoalType[] = ['rate', 'cumulative'];
-  const allowedTypes = slot === 'daily' ? dailyTypes : weeklyTypes;
-
+function CustomForm({ slot, onAdd }: { slot: Slot; onAdd: (g: Goal) => void }) {
+  const allowedTypes = SLOT_TYPES[slot];
   const [type, setType] = useState<GoalType>(allowedTypes[0]);
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
@@ -34,11 +37,11 @@ function CustomForm({ slot, onAdd }: { slot: 'daily' | 'weekly'; onAdd: (g: Goal
   const [targetRate, setTargetRate] = useState('15');
   const [targetTotal, setTargetTotal] = useState('');
   const [cumUnit, setCumUnit] = useState('');
-  const [cumPeriod, setCumPeriod] = useState<'monthly' | 'weekly'>('monthly');
+  const [cumPeriod, setCumPeriod] = useState<'monthly' | 'weekly'>(slot === 'weekly' ? 'weekly' : 'monthly');
 
   const submit = () => {
     if (!title.trim()) return;
-    const base = { id: uuidv4(), title: title.trim(), description: desc.trim(), emoji, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    const base = { id: uuidv4(), slot, title: title.trim(), description: desc.trim(), emoji, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
     if (type === 'rate')             onAdd({ ...base, type: 'rate', unit: unit||'rate', targetRate: parseInt(targetRate)||15, logs: [] });
     else if (type === 'consistency') onAdd({ ...base, type: 'consistency', targetRate: parseInt(targetRate)||80, logs: [] });
     else if (type === 'cumulative')  onAdd({ ...base, type: 'cumulative', targetTotal: parseFloat(targetTotal)||100, unit: cumUnit||'items', targetPeriod: cumPeriod, logs: [] });
@@ -112,12 +115,9 @@ function CustomForm({ slot, onAdd }: { slot: 'daily' | 'weekly'; onAdd: (g: Goal
   );
 }
 
-function GoalSlot({
-  label, color, goal, slot, onSelect, onRemove,
-}: {
+function GoalSlot({ label, color, goal, slot, onSelect, onRemove }: {
   label: string; color: string; goal: Goal | null;
-  slot: 'daily' | 'weekly';
-  onSelect: (g: Goal) => void; onRemove: () => void;
+  slot: Slot; onSelect: (g: Goal) => void; onRemove: () => void;
 }) {
   return (
     <div className="rounded-xl overflow-hidden" style={{ border: `1.5px solid ${color}30` }}>
@@ -149,10 +149,13 @@ export default function OnboardingFlow({ takenAvatars, onComplete }: Props) {
   const [name, setName] = useState('');
   const [dailyGoal, setDailyGoal] = useState<Goal | null>(null);
   const [weeklyGoal, setWeeklyGoal] = useState<Goal | null>(null);
+  const [monthlyGoal, setMonthlyGoal] = useState<Goal | null>(null);
+
+  const allSet = !!dailyGoal && !!weeklyGoal && !!monthlyGoal;
 
   const finish = () => {
-    if (!animal || !name.trim() || !dailyGoal || !weeklyGoal) return;
-    onComplete({ name: name.trim(), avatar: animal, jerseyColor: '', goals: [dailyGoal, weeklyGoal], onboarded: true });
+    if (!animal || !name.trim() || !allSet) return;
+    onComplete({ name: name.trim(), avatar: animal, jerseyColor: '', goals: [dailyGoal!, weeklyGoal!, monthlyGoal!], onboarded: true });
   };
 
   const stepIdx = step === 'avatar' ? 0 : step === 'name' ? 1 : 2;
@@ -229,30 +232,24 @@ export default function OnboardingFlow({ takenAvatars, onComplete }: Props) {
                 <div className="font-black text-white" style={{ fontFamily:'Oswald' }}>{name}</div>
                 <div className="text-xs text-white/40">{ANIMAL_NAMES[animal]}</div>
               </div>
-              <div className="flex gap-2 text-sm">
-                <span title="Daily goal" style={{ opacity: dailyGoal ? 1 : 0.3 }}>☀️{dailyGoal ? '✅' : '⬜'}</span>
-                <span title="Weekly goal" style={{ opacity: weeklyGoal ? 1 : 0.3 }}>📅{weeklyGoal ? '✅' : '⬜'}</span>
+              <div className="flex gap-1.5 text-sm">
+                <span title="Daily" style={{ opacity: dailyGoal ? 1 : 0.3 }}>☀️{dailyGoal ? '✅' : '⬜'}</span>
+                <span title="Weekly" style={{ opacity: weeklyGoal ? 1 : 0.3 }}>📅{weeklyGoal ? '✅' : '⬜'}</span>
+                <span title="Monthly" style={{ opacity: monthlyGoal ? 1 : 0.3 }}>🗓️{monthlyGoal ? '✅' : '⬜'}</span>
               </div>
             </div>
 
             <div className="space-y-4 mb-4">
-              <GoalSlot
-                label="Daily Goal" color="#4ade80"
-                goal={dailyGoal} slot="daily"
-                onSelect={setDailyGoal} onRemove={() => setDailyGoal(null)}
-              />
-              <GoalSlot
-                label="Weekly Goal" color="#a78bfa"
-                goal={weeklyGoal} slot="weekly"
-                onSelect={setWeeklyGoal} onRemove={() => setWeeklyGoal(null)}
-              />
+              <GoalSlot label="Daily Goal"   color="#4ade80" goal={dailyGoal}   slot="daily"   onSelect={setDailyGoal}   onRemove={() => setDailyGoal(null)}/>
+              <GoalSlot label="Weekly Goal"  color="#60a5fa" goal={weeklyGoal}  slot="weekly"  onSelect={setWeeklyGoal}  onRemove={() => setWeeklyGoal(null)}/>
+              <GoalSlot label="Monthly Goal" color="#a78bfa" goal={monthlyGoal} slot="monthly" onSelect={setMonthlyGoal} onRemove={() => setMonthlyGoal(null)}/>
             </div>
 
             <div className="flex gap-3">
               <button onClick={()=>setStep('name')} className="px-4 py-2.5 rounded-xl text-sm text-white/50" style={{ background:'rgba(255,255,255,0.08)' }}>← Back</button>
-              <button onClick={finish} disabled={!dailyGoal || !weeklyGoal}
+              <button onClick={finish} disabled={!allSet}
                 className="flex-1 py-3 rounded-xl font-black text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105 transition-transform active:scale-95"
-                style={{ background:(dailyGoal && weeklyGoal)?'#f9c923':'rgba(255,255,255,0.2)', color:'#1a1a1a', fontFamily:'Oswald', letterSpacing:'0.05em' }}>
+                style={{ background: allSet?'#f9c923':'rgba(255,255,255,0.2)', color:'#1a1a1a', fontFamily:'Oswald', letterSpacing:'0.05em' }}>
                 ⚽ KICK OFF!
               </button>
             </div>

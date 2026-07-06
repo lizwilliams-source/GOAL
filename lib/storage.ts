@@ -35,21 +35,10 @@ export function removePlayer(data: AppData, playerId: string): AppData {
   return { ...data, players: data.players.filter(p => p.id !== playerId) };
 }
 
-export function isDaily(goal: Goal | { type: string }): boolean {
-  return goal.type === 'habit' || goal.type === 'consistency';
-}
-
-export function isWeekly(goal: Goal | { type: string }): boolean {
-  return goal.type === 'rate' || goal.type === 'cumulative';
-}
-
 export function addGoalToPlayer(data: AppData, playerId: string, goal: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>): AppData {
   const player = data.players.find(p => p.id === playerId);
   if (!player) return data;
-  const hasDaily = player.goals.some(isDaily);
-  const hasWeekly = player.goals.some(isWeekly);
-  if (isDaily(goal) && hasDaily) return data;
-  if (isWeekly(goal) && hasWeekly) return data;
+  if (player.goals.some(g => g.slot === goal.slot)) return data;
   const newGoal: Goal = { ...goal, id: uuidv4(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as Goal;
   return updatePlayer(data, playerId, { goals: [...player.goals, newGoal] });
 }

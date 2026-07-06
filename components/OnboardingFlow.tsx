@@ -13,25 +13,28 @@ type Step = 'avatar' | 'name' | 'goals';
 type GoalType = 'rate' | 'habit' | 'consistency' | 'cumulative';
 
 const TYPE_INFO: Record<GoalType, { color: string; label: string; desc: string }> = {
-  rate:        { color: '#60a5fa', label: '📈 Rate tracker',  desc: 'Log a number over time, see the delta' },
   habit:       { color: '#4ade80', label: '✅ Daily habit',    desc: 'Yes/no each day, track % completion' },
   consistency: { color: '#fb923c', label: '🎯 Consistency',    desc: 'X out of Y instances — hit rate' },
-  cumulative:  { color: '#a78bfa', label: '🔢 Cumulative',     desc: 'Add up totals, track pace vs 21-day month' },
+  rate:        { color: '#60a5fa', label: '📈 Rate tracker',  desc: 'Log a number over time, see the delta' },
+  cumulative:  { color: '#a78bfa', label: '🔢 Cumulative',     desc: 'Add up totals, track pace vs target' },
 };
 
-const TEMPLATES = [
+const DAILY_TEMPLATES = [
+  { type: 'habit'       as GoalType, title: 'Hit 200 WIN daily', description: '200+ Work Effort metric every working day', emoji: '💼' },
+  { type: 'habit'       as GoalType, title: 'Source 25 fresh leads every day', description: 'Self-prospect 25 leads every day', emoji: '⚡' },
   { type: 'consistency' as GoalType, title: 'Handle pricing objection better', description: 'Navigate "how much does it cost" without giving price', emoji: '💬', targetRate: 85 },
   { type: 'consistency' as GoalType, title: 'Mention setup fee on every demo', description: 'Log how many demos you brought up the setup fee on', emoji: '📋', targetRate: 100 },
-  { type: 'rate'        as GoalType, title: 'Hit 33% close rate', description: 'Log closes out of total opportunities each session', emoji: '📈', unit: 'close rate', targetRate: 33 },
-  { type: 'habit'       as GoalType, title: 'Hit 200 WIN daily', description: '200+ Work Effort metric every working day', emoji: '💼' },
-  { type: 'habit'       as GoalType, title: 'Source 25 fresh leads every day', description: 'Self-prospect 25 leads every dat', emoji: '⚡' },
-  { type: 'cumulative'  as GoalType, title: 'Set 40 Demos this month', description: 'Set 40 qualified demos this month', emoji: '📞', targetTotal: 40, unit: 'Sets', targetPeriod: 'monthly' },
-  { type: 'cumulative'  as GoalType, title: 'Hold 10 Demos this month', description: 'Hold a demo every other day', emoji: '📅', targetTotal: 10, unit: 'Holds', targetPeriod: 'monthly' },
+];
+
+const WEEKLY_TEMPLATES = [
+  { type: 'rate'       as GoalType, title: 'Hit 33% close rate', description: 'Log closes out of total opportunities each session', emoji: '📈', unit: 'close rate', targetRate: 33 },
+  { type: 'cumulative' as GoalType, title: 'Set 40 Demos this month', description: 'Set 40 qualified demos this month', emoji: '📞', targetTotal: 40, unit: 'Sets', targetPeriod: 'monthly' },
+  { type: 'cumulative' as GoalType, title: 'Hold 10 Demos this month', description: 'Hold a demo every other day', emoji: '📅', targetTotal: 10, unit: 'Holds', targetPeriod: 'monthly' },
 ];
 
 const EMOJIS = ['🎯','💼','📈','💬','📋','⚡','🔥','💪','🏆','📞','🤝','💰','🚀','⭐','🎪'];
 
-function mkGoal(tmpl: typeof TEMPLATES[0]): Goal {
+function mkGoal(tmpl: typeof DAILY_TEMPLATES[0] | typeof WEEKLY_TEMPLATES[0]): Goal {
   const base = { id: uuidv4(), title: tmpl.title, description: tmpl.description, emoji: tmpl.emoji, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
   if (tmpl.type === 'consistency') return { ...base, type: 'consistency', targetRate: (tmpl as any).targetRate ?? 80, logs: [] };
   if (tmpl.type === 'rate')        return { ...base, type: 'rate', unit: (tmpl as any).unit ?? 'rate', targetRate: (tmpl as any).targetRate ?? 15, logs: [] };
@@ -39,8 +42,12 @@ function mkGoal(tmpl: typeof TEMPLATES[0]): Goal {
   return { ...base, type: 'habit', logs: [] };
 }
 
-function CustomForm({ onAdd, onCancel }: { onAdd: (g: Goal) => void; onCancel: () => void }) {
-  const [type, setType] = useState<GoalType>('habit');
+function CustomForm({ slot, onAdd, onCancel }: { slot: 'daily' | 'weekly'; onAdd: (g: Goal) => void; onCancel: () => void }) {
+  const dailyTypes: GoalType[] = ['habit', 'consistency'];
+  const weeklyTypes: GoalType[] = ['rate', 'cumulative'];
+  const allowedTypes = slot === 'daily' ? dailyTypes : weeklyTypes;
+
+  const [type, setType] = useState<GoalType>(allowedTypes[0]);
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [emoji, setEmoji] = useState('🎯');
@@ -70,7 +77,7 @@ function CustomForm({ onAdd, onCancel }: { onAdd: (g: Goal) => void; onCancel: (
       <input type="text" placeholder="Goal title" value={title} onChange={e=>setTitle(e.target.value)} className="w-full"/>
       <textarea placeholder="What does success look like?" value={desc} onChange={e=>setDesc(e.target.value)} className="w-full resize-none" rows={2}/>
       <div className="grid grid-cols-2 gap-2">
-        {(['rate','habit','consistency','cumulative'] as GoalType[]).map(t => (
+        {allowedTypes.map(t => (
           <button key={t} onClick={() => setType(t)} className="p-2 rounded-lg text-xs font-bold text-center transition-all"
             style={{ background: type===t?'rgba(249,201,35,0.15)':'rgba(255,255,255,0.06)', border:`2px solid ${type===t?'rgba(249,201,35,0.5)':'transparent'}`, color: type===t?'#f9c923':'rgba(255,255,255,0.5)' }}>
             {TYPE_INFO[t].label}
@@ -126,16 +133,72 @@ function CustomForm({ onAdd, onCancel }: { onAdd: (g: Goal) => void; onCancel: (
   );
 }
 
+function GoalSlot({
+  label, color, goal, templates, slot, onSelect, onRemove,
+}: {
+  label: string; color: string; goal: Goal | null;
+  templates: typeof DAILY_TEMPLATES | typeof WEEKLY_TEMPLATES;
+  slot: 'daily' | 'weekly';
+  onSelect: (g: Goal) => void; onRemove: () => void;
+}) {
+  const [showCustom, setShowCustom] = useState(false);
+
+  return (
+    <div className="rounded-xl overflow-hidden" style={{ border: `1.5px solid ${color}30` }}>
+      <div className="px-3 py-2 flex items-center justify-between" style={{ background: `${color}12` }}>
+        <span className="text-xs font-black uppercase tracking-widest" style={{ color }}>{label}</span>
+        {goal && <span className="text-[10px] text-white/40">✓ set</span>}
+      </div>
+      <div className="p-3" style={{ background: 'rgba(0,0,0,0.2)' }}>
+        {goal ? (
+          <div className="flex items-center gap-2 p-2.5 rounded-xl" style={{ background:'rgba(0,0,0,0.3)', border:`1px solid ${TYPE_INFO[goal.type as GoalType]?.color}40` }}>
+            <span className="text-lg">{goal.emoji}</span>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-bold text-white leading-tight">{goal.title}</div>
+              <div className="text-[10px] mt-0.5" style={{ color:TYPE_INFO[goal.type as GoalType]?.color }}>{TYPE_INFO[goal.type as GoalType]?.label}</div>
+            </div>
+            <button onClick={onRemove} className="text-white/30 hover:text-red-400 transition-colors p-1 text-sm">✕</button>
+          </div>
+        ) : showCustom ? (
+          <CustomForm slot={slot} onAdd={g=>{onSelect(g);setShowCustom(false);}} onCancel={()=>setShowCustom(false)}/>
+        ) : (
+          <>
+            <div className="space-y-1.5 mb-2">
+              {templates.map((tmpl, i) => (
+                <button key={i} onClick={() => onSelect(mkGoal(tmpl))}
+                  className="w-full flex items-center gap-2 p-2.5 rounded-xl text-left hover:scale-[1.01] transition-all"
+                  style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)' }}>
+                  <span className="text-lg">{tmpl.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-white leading-tight">{tmpl.title}</div>
+                    <div className="text-[10px]" style={{ color:TYPE_INFO[tmpl.type]?.color }}>{TYPE_INFO[tmpl.type]?.label}</div>
+                  </div>
+                  <span className="text-white/30 text-lg flex-shrink-0">+</span>
+                </button>
+              ))}
+            </div>
+            <button onClick={()=>setShowCustom(true)}
+              className="w-full py-2 rounded-xl text-xs font-semibold text-white/50 hover:text-white transition-colors"
+              style={{ background:'rgba(255,255,255,0.06)', border:'1px dashed rgba(255,255,255,0.15)' }}>
+              + Write a custom goal
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function OnboardingFlow({ takenAvatars, onComplete }: Props) {
   const [step, setStep] = useState<Step>('avatar');
   const [animal, setAnimal] = useState<AnimalKind | null>(null);
   const [name, setName] = useState('');
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [showCustom, setShowCustom] = useState(false);
+  const [dailyGoal, setDailyGoal] = useState<Goal | null>(null);
+  const [weeklyGoal, setWeeklyGoal] = useState<Goal | null>(null);
 
   const finish = () => {
-    if (!animal || !name.trim() || goals.length === 0) return;
-    onComplete({ name: name.trim(), avatar: animal, jerseyColor: '', goals, onboarded: true });
+    if (!animal || !name.trim() || !dailyGoal || !weeklyGoal) return;
+    onComplete({ name: name.trim(), avatar: animal, jerseyColor: '', goals: [dailyGoal, weeklyGoal], onboarded: true });
   };
 
   const stepIdx = step === 'avatar' ? 0 : step === 'name' ? 1 : 2;
@@ -212,66 +275,30 @@ export default function OnboardingFlow({ takenAvatars, onComplete }: Props) {
                 <div className="font-black text-white" style={{ fontFamily:'Oswald' }}>{name}</div>
                 <div className="text-xs text-white/40">{ANIMAL_NAMES[animal]}</div>
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-black text-yellow-400" style={{ fontFamily:'Black Han Sans' }}>{goals.length}/3</div>
-                <div className="text-[10px] text-white/30">goals</div>
+              <div className="flex gap-2 text-sm">
+                <span title="Daily goal" style={{ opacity: dailyGoal ? 1 : 0.3 }}>☀️{dailyGoal ? '✅' : '⬜'}</span>
+                <span title="Weekly goal" style={{ opacity: weeklyGoal ? 1 : 0.3 }}>📅{weeklyGoal ? '✅' : '⬜'}</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              {(Object.entries(TYPE_INFO) as [GoalType, typeof TYPE_INFO[GoalType]][]).map(([t, info]) => (
-                <div key={t} className="p-2 rounded-xl text-center" style={{ background:'rgba(0,0,0,0.25)', border:`1px solid ${info.color}25` }}>
-                  <div className="text-xs font-bold mb-1" style={{ color:info.color }}>{info.label}</div>
-                  <div className="text-[9px] leading-snug" style={{ color:'rgba(255,255,255,0.35)' }}>{info.desc}</div>
-                </div>
-              ))}
+            <div className="space-y-4 mb-4">
+              <GoalSlot
+                label="Daily Goal" color="#4ade80"
+                goal={dailyGoal} templates={DAILY_TEMPLATES} slot="daily"
+                onSelect={setDailyGoal} onRemove={() => setDailyGoal(null)}
+              />
+              <GoalSlot
+                label="Weekly Goal" color="#a78bfa"
+                goal={weeklyGoal} templates={WEEKLY_TEMPLATES} slot="weekly"
+                onSelect={setWeeklyGoal} onRemove={() => setWeeklyGoal(null)}
+              />
             </div>
-
-            {goals.map((g, i) => (
-              <div key={i} className="flex items-center gap-2 p-2.5 rounded-xl mb-2" style={{ background:'rgba(0,0,0,0.3)', border:`1px solid ${TYPE_INFO[g.type as GoalType]?.color}40` }}>
-                <span className="text-lg">{g.emoji}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-bold text-white leading-tight">{g.title}</div>
-                  <div className="text-[10px] mt-0.5" style={{ color:TYPE_INFO[g.type as GoalType]?.color }}>{TYPE_INFO[g.type as GoalType]?.label}</div>
-                </div>
-                <button onClick={() => setGoals(prev=>prev.filter((_,j)=>j!==i))} className="text-white/30 hover:text-red-400 transition-colors p-1 text-sm">✕</button>
-              </div>
-            ))}
-
-            {showCustom ? (
-              <CustomForm onAdd={g=>{setGoals(prev=>[...prev,g]);setShowCustom(false);}} onCancel={()=>setShowCustom(false)}/>
-            ) : goals.length < 3 ? (
-              <>
-                <div className="text-xs text-white/40 uppercase tracking-wider mb-2">Quick add</div>
-                <div className="space-y-1.5 mb-3">
-                  {TEMPLATES.map((tmpl, i) => (
-                    <button key={i} onClick={() => setGoals(prev=>[...prev, mkGoal(tmpl)])}
-                      className="w-full flex items-center gap-2 p-2.5 rounded-xl text-left hover:scale-[1.01] transition-all"
-                      style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)' }}>
-                      <span className="text-lg">{tmpl.emoji}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold text-white leading-tight">{tmpl.title}</div>
-                        <div className="text-[10px]" style={{ color:TYPE_INFO[tmpl.type]?.color }}>{TYPE_INFO[tmpl.type]?.label}</div>
-                      </div>
-                      <span className="text-white/30 text-lg flex-shrink-0">+</span>
-                    </button>
-                  ))}
-                </div>
-                <button onClick={()=>setShowCustom(true)}
-                  className="w-full py-2 rounded-xl text-xs font-semibold text-white/50 hover:text-white transition-colors"
-                  style={{ background:'rgba(255,255,255,0.06)', border:'1px dashed rgba(255,255,255,0.15)' }}>
-                  + Write a custom goal
-                </button>
-              </>
-            ) : (
-              <div className="text-center py-2 text-white/30 text-sm">Max 3 goals — you're set!</div>
-            )}
 
             <div className="flex gap-3 mt-4">
               <button onClick={()=>setStep('name')} className="px-4 py-2.5 rounded-xl text-sm text-white/50" style={{ background:'rgba(255,255,255,0.08)' }}>← Back</button>
-              <button onClick={finish} disabled={goals.length===0}
+              <button onClick={finish} disabled={!dailyGoal || !weeklyGoal}
                 className="flex-1 py-3 rounded-xl font-black text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105 transition-transform active:scale-95"
-                style={{ background:goals.length>0?'#f9c923':'rgba(255,255,255,0.2)', color:'#1a1a1a', fontFamily:'Oswald', letterSpacing:'0.05em' }}>
+                style={{ background:(dailyGoal && weeklyGoal)?'#f9c923':'rgba(255,255,255,0.2)', color:'#1a1a1a', fontFamily:'Oswald', letterSpacing:'0.05em' }}>
                 ⚽ KICK OFF!
               </button>
             </div>

@@ -218,6 +218,16 @@ export default function Home() {
                   style={{ background:'rgba(249,201,35,0.15)', color:'#f9c923', border:'1px solid rgba(249,201,35,0.3)' }}>
                   📊
                 </button>
+                <button onClick={async () => {
+                    if (window.confirm('Reset ALL data? This will delete every player, goal, and log. Cannot be undone.')) {
+                      await sb.resetAllData();
+                      await refresh();
+                    }
+                  }}
+                  className="text-xs px-3 py-1.5 rounded-lg font-bold hover:scale-105 transition-all"
+                  style={{ background:'rgba(239,68,68,0.15)', color:'#f87171', border:'1px solid rgba(239,68,68,0.3)' }}>
+                  Reset
+                </button>
                 <button onClick={() => setShowOnboarding(true)}
                   className="text-xs px-3 py-1.5 rounded-lg font-bold hover:scale-105 transition-all"
                   style={{ background:'#f9c923', color:'#1a1a1a' }}>

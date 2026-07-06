@@ -239,11 +239,18 @@ function ConsistencyDisplay({ goal, onLog, onDelete }: { goal: ConsistencyGoal; 
   );
 }
 
+function goalSlotLabel(goal: Goal): string {
+  return goal.type === 'habit' || goal.type === 'consistency' ? 'Daily' : 'Weekly';
+}
+
 export default function PlayerCard({
   player, onCheckIn, onDeleteGoal, onAddGoal, onDeletePlayer,
   expanded = false, onToggle, isMe = false
 }: Props) {
   const overall = getPlayerOverall(player);
+  const hasDaily = player.goals.some(g => g.type === 'habit' || g.type === 'consistency');
+  const hasWeekly = player.goals.some(g => g.type === 'rate' || g.type === 'cumulative');
+  const needsGoal = !hasDaily || !hasWeekly;
   // complete = every goal truly hit its target (raw), not just pace-adjusted
   const complete = player.goals.length > 0 && player.goals.every(goal =>
     goal.type === 'cumulative'
@@ -297,7 +304,12 @@ export default function PlayerCard({
         </div>
         <div className="flex-1 min-w-0">
           <div className="font-black text-white text-base leading-tight" style={{ fontFamily: 'Oswald' }}>{player.name}</div>
-          <div className="text-xs text-white/40 mt-0.5">{player.goals.length} goal{player.goals.length !== 1 ? 's' : ''} · {expanded ? 'collapse ▲' : 'expand ▼'}</div>
+          <div className="text-xs text-white/40 mt-0.5">
+            {hasDaily && hasWeekly ? 'daily + weekly'
+              : !hasDaily && !hasWeekly ? 'no goals yet'
+              : !hasDaily ? 'add daily goal'
+              : 'add weekly goal'} · {expanded ? 'collapse ▲' : 'expand ▼'}
+          </div>
           <div className="mt-2 space-y-1.5">
             {goalBars.map((b, i) => (
               <div key={i} className="flex items-center gap-2">
@@ -315,18 +327,25 @@ export default function PlayerCard({
           {player.goals.length === 0
             ? <p className="text-white/30 text-sm text-center py-2">No goals set yet</p>
             : player.goals.map(goal => {
+              const slotLabel = goalSlotLabel(goal);
+              const slotColor = slotLabel === 'Daily' ? '#4ade80' : '#a78bfa';
               const props = { onLog: () => onCheckIn(player, goal), onDelete: () => onDeleteGoal(player, goal.id) };
-              if (goal.type === 'rate')        return <RateDisplay        key={goal.id} goal={goal} {...props}/>;
-              if (goal.type === 'habit')       return <HabitDisplay       key={goal.id} goal={goal} {...props}/>;
-              if (goal.type === 'consistency') return <ConsistencyDisplay key={goal.id} goal={goal} {...props}/>;
-              if (goal.type === 'cumulative') return <CumulativeDisplay  key={goal.id} goal={goal} {...props}/>;
+              return (
+                <div key={goal.id}>
+                  <div className="text-[9px] font-black uppercase tracking-widest mb-1 px-0.5" style={{ color: slotColor }}>{slotLabel} Goal</div>
+                  {goal.type === 'rate'        && <RateDisplay        goal={goal} {...props}/>}
+                  {goal.type === 'habit'       && <HabitDisplay       goal={goal} {...props}/>}
+                  {goal.type === 'consistency' && <ConsistencyDisplay goal={goal} {...props}/>}
+                  {goal.type === 'cumulative'  && <CumulativeDisplay  goal={goal} {...props}/>}
+                </div>
+              );
             })
           }
-          {player.goals.length < 3 && (
+          {needsGoal && (
             <button onClick={() => onAddGoal(player)}
               className="w-full py-2 rounded-xl text-xs font-semibold text-white/50 hover:text-white transition-colors"
               style={{ background: 'rgba(255,255,255,0.06)', border: '1px dashed rgba(255,255,255,0.15)' }}>
-              + Add goal
+              + Add {!hasDaily ? 'daily' : 'weekly'} goal
             </button>
           )}
           <button onClick={() => { if (window.confirm(`Remove ${player.name} from the team?`)) onDeletePlayer(player); }}

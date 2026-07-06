@@ -212,6 +212,10 @@ export async function setRevenueTarget(goalId: string, target: number): Promise<
   await getSupabase().from('goals').update({ target_total: target }).eq('id', goalId);
 }
 
+export async function resetAllData(): Promise<void> {
+  await getSupabase().from('players').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+}
+
 export async function clearLog(goalId: string, goalType: string, date: string): Promise<void> {
   const tables: Record<string, string> = {
     rate: 'rate_logs', habit: 'habit_logs',

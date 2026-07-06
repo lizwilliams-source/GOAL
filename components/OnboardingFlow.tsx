@@ -19,30 +19,9 @@ const TYPE_INFO: Record<GoalType, { color: string; label: string; desc: string }
   cumulative:  { color: '#a78bfa', label: '🔢 Cumulative',     desc: 'Add up totals, track pace vs target' },
 };
 
-const DAILY_TEMPLATES = [
-  { type: 'habit'       as GoalType, title: 'Hit 200 WIN daily', description: '200+ Work Effort metric every working day', emoji: '💼' },
-  { type: 'habit'       as GoalType, title: 'Source 25 fresh leads every day', description: 'Self-prospect 25 leads every day', emoji: '⚡' },
-  { type: 'consistency' as GoalType, title: 'Handle pricing objection better', description: 'Navigate "how much does it cost" without giving price', emoji: '💬', targetRate: 85 },
-  { type: 'consistency' as GoalType, title: 'Mention setup fee on every demo', description: 'Log how many demos you brought up the setup fee on', emoji: '📋', targetRate: 100 },
-];
-
-const WEEKLY_TEMPLATES = [
-  { type: 'rate'       as GoalType, title: 'Hit 33% close rate', description: 'Log closes out of total opportunities each session', emoji: '📈', unit: 'close rate', targetRate: 33 },
-  { type: 'cumulative' as GoalType, title: 'Set 40 Demos this month', description: 'Set 40 qualified demos this month', emoji: '📞', targetTotal: 40, unit: 'Sets', targetPeriod: 'monthly' },
-  { type: 'cumulative' as GoalType, title: 'Hold 10 Demos this month', description: 'Hold a demo every other day', emoji: '📅', targetTotal: 10, unit: 'Holds', targetPeriod: 'monthly' },
-];
-
 const EMOJIS = ['🎯','💼','📈','💬','📋','⚡','🔥','💪','🏆','📞','🤝','💰','🚀','⭐','🎪'];
 
-function mkGoal(tmpl: typeof DAILY_TEMPLATES[0] | typeof WEEKLY_TEMPLATES[0]): Goal {
-  const base = { id: uuidv4(), title: tmpl.title, description: tmpl.description, emoji: tmpl.emoji, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-  if (tmpl.type === 'consistency') return { ...base, type: 'consistency', targetRate: (tmpl as any).targetRate ?? 80, logs: [] };
-  if (tmpl.type === 'rate')        return { ...base, type: 'rate', unit: (tmpl as any).unit ?? 'rate', targetRate: (tmpl as any).targetRate ?? 15, logs: [] };
-  if (tmpl.type === 'cumulative')  return { ...base, type: 'cumulative', targetTotal: (tmpl as any).targetTotal ?? 100, unit: (tmpl as any).unit ?? 'items', targetPeriod: (tmpl as any).targetPeriod ?? 'monthly', logs: [] };
-  return { ...base, type: 'habit', logs: [] };
-}
-
-function CustomForm({ slot, onAdd, onCancel }: { slot: 'daily' | 'weekly'; onAdd: (g: Goal) => void; onCancel: () => void }) {
+function CustomForm({ slot, onAdd }: { slot: 'daily' | 'weekly'; onAdd: (g: Goal) => void }) {
   const dailyTypes: GoalType[] = ['habit', 'consistency'];
   const weeklyTypes: GoalType[] = ['rate', 'cumulative'];
   const allowedTypes = slot === 'daily' ? dailyTypes : weeklyTypes;
@@ -80,7 +59,8 @@ function CustomForm({ slot, onAdd, onCancel }: { slot: 'daily' | 'weekly'; onAdd
         {allowedTypes.map(t => (
           <button key={t} onClick={() => setType(t)} className="p-2 rounded-lg text-xs font-bold text-center transition-all"
             style={{ background: type===t?'rgba(249,201,35,0.15)':'rgba(255,255,255,0.06)', border:`2px solid ${type===t?'rgba(249,201,35,0.5)':'transparent'}`, color: type===t?'#f9c923':'rgba(255,255,255,0.5)' }}>
-            {TYPE_INFO[t].label}
+            <div>{TYPE_INFO[t].label}</div>
+            <div className="text-[9px] mt-0.5 font-normal opacity-70">{TYPE_INFO[t].desc}</div>
           </button>
         ))}
       </div>
@@ -125,24 +105,20 @@ function CustomForm({ slot, onAdd, onCancel }: { slot: 'daily' | 'weekly'; onAdd
           </div>
         </div>
       )}
-      <div className="flex gap-2">
-        <button onClick={onCancel} className="flex-1 py-2 rounded-lg text-xs text-white/50" style={{ background:'rgba(255,255,255,0.06)' }}>Cancel</button>
-        <button onClick={submit} disabled={!title.trim()} className="flex-1 py-2 rounded-lg text-xs font-black disabled:opacity-40" style={{ background:'#f9c923', color:'#1a1a1a' }}>Add</button>
-      </div>
+      <button onClick={submit} disabled={!title.trim()} className="w-full py-2 rounded-lg text-xs font-black disabled:opacity-40" style={{ background:'#f9c923', color:'#1a1a1a' }}>
+        Set goal →
+      </button>
     </div>
   );
 }
 
 function GoalSlot({
-  label, color, goal, templates, slot, onSelect, onRemove,
+  label, color, goal, slot, onSelect, onRemove,
 }: {
   label: string; color: string; goal: Goal | null;
-  templates: typeof DAILY_TEMPLATES | typeof WEEKLY_TEMPLATES;
   slot: 'daily' | 'weekly';
   onSelect: (g: Goal) => void; onRemove: () => void;
 }) {
-  const [showCustom, setShowCustom] = useState(false);
-
   return (
     <div className="rounded-xl overflow-hidden" style={{ border: `1.5px solid ${color}30` }}>
       <div className="px-3 py-2 flex items-center justify-between" style={{ background: `${color}12` }}>
@@ -159,30 +135,8 @@ function GoalSlot({
             </div>
             <button onClick={onRemove} className="text-white/30 hover:text-red-400 transition-colors p-1 text-sm">✕</button>
           </div>
-        ) : showCustom ? (
-          <CustomForm slot={slot} onAdd={g=>{onSelect(g);setShowCustom(false);}} onCancel={()=>setShowCustom(false)}/>
         ) : (
-          <>
-            <div className="space-y-1.5 mb-2">
-              {templates.map((tmpl, i) => (
-                <button key={i} onClick={() => onSelect(mkGoal(tmpl))}
-                  className="w-full flex items-center gap-2 p-2.5 rounded-xl text-left hover:scale-[1.01] transition-all"
-                  style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)' }}>
-                  <span className="text-lg">{tmpl.emoji}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-white leading-tight">{tmpl.title}</div>
-                    <div className="text-[10px]" style={{ color:TYPE_INFO[tmpl.type]?.color }}>{TYPE_INFO[tmpl.type]?.label}</div>
-                  </div>
-                  <span className="text-white/30 text-lg flex-shrink-0">+</span>
-                </button>
-              ))}
-            </div>
-            <button onClick={()=>setShowCustom(true)}
-              className="w-full py-2 rounded-xl text-xs font-semibold text-white/50 hover:text-white transition-colors"
-              style={{ background:'rgba(255,255,255,0.06)', border:'1px dashed rgba(255,255,255,0.15)' }}>
-              + Write a custom goal
-            </button>
-          </>
+          <CustomForm slot={slot} onAdd={onSelect}/>
         )}
       </div>
     </div>
@@ -268,7 +222,7 @@ export default function OnboardingFlow({ takenAvatars, onComplete }: Props) {
         )}
 
         {step === 'goals' && animal && (
-          <div className="rounded-2xl p-5 slide-up" style={{ background:'rgba(0,0,0,0.45)', border:'2px solid rgba(249,201,35,0.2)' }}>
+          <div className="rounded-2xl p-5 slide-up overflow-y-auto" style={{ background:'rgba(0,0,0,0.45)', border:'2px solid rgba(249,201,35,0.2)', maxHeight:'90svh' }}>
             <div className="flex items-center gap-3 mb-4 p-3 rounded-xl" style={{ background:'rgba(0,0,0,0.3)' }}>
               <AnimalAvatar animal={animal} size={56}/>
               <div className="flex-1">
@@ -284,17 +238,17 @@ export default function OnboardingFlow({ takenAvatars, onComplete }: Props) {
             <div className="space-y-4 mb-4">
               <GoalSlot
                 label="Daily Goal" color="#4ade80"
-                goal={dailyGoal} templates={DAILY_TEMPLATES} slot="daily"
+                goal={dailyGoal} slot="daily"
                 onSelect={setDailyGoal} onRemove={() => setDailyGoal(null)}
               />
               <GoalSlot
                 label="Weekly Goal" color="#a78bfa"
-                goal={weeklyGoal} templates={WEEKLY_TEMPLATES} slot="weekly"
+                goal={weeklyGoal} slot="weekly"
                 onSelect={setWeeklyGoal} onRemove={() => setWeeklyGoal(null)}
               />
             </div>
 
-            <div className="flex gap-3 mt-4">
+            <div className="flex gap-3">
               <button onClick={()=>setStep('name')} className="px-4 py-2.5 rounded-xl text-sm text-white/50" style={{ background:'rgba(255,255,255,0.08)' }}>← Back</button>
               <button onClick={finish} disabled={!dailyGoal || !weeklyGoal}
                 className="flex-1 py-3 rounded-xl font-black text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105 transition-transform active:scale-95"

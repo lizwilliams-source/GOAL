@@ -6,8 +6,8 @@ export interface RateGoal {
   type: 'rate';
   slot: 'daily' | 'weekly' | 'monthly';
   id: string; title: string; description: string; emoji: string;
-  unit: string;        // label, e.g. "set rate", "close rate"
-  targetRate: number;  // target %, e.g. 15 for 15%
+  unit: string;
+  targetRate: number;
   logs: { date: string; made: number; attempts: number; note?: string }[];
   createdAt: string; updatedAt: string;
 }
@@ -17,15 +17,6 @@ export interface HabitGoal {
   slot: 'daily' | 'weekly' | 'monthly';
   id: string; title: string; description: string; emoji: string;
   logs: { date: string; completed: boolean; note?: string; loggedAt?: string }[];
-  createdAt: string; updatedAt: string;
-}
-
-export interface ConsistencyGoal {
-  type: 'consistency';
-  slot: 'daily' | 'weekly' | 'monthly';
-  id: string; title: string; description: string; emoji: string;
-  targetRate: number;
-  logs: { date: string; handled: number; total: number; note?: string }[];
   createdAt: string; updatedAt: string;
 }
 
@@ -40,7 +31,7 @@ export interface CumulativeGoal {
   createdAt: string; updatedAt: string;
 }
 
-export type Goal = RateGoal | HabitGoal | ConsistencyGoal | CumulativeGoal;
+export type Goal = RateGoal | HabitGoal | CumulativeGoal;
 
 export interface Player {
   id: string;

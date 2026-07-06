@@ -3,8 +3,8 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { AppData, Player, Goal } from '../types';
 import * as sb from '../lib/supabaseStorage';
-import { getPlayerOverall, getGoalProgress, getHabitProgress, getHabitStreak, getRateProgress, getConsistencyProgress, getCumulativeProgress } from '../lib/storage';
-import { HabitGoal, RateGoal, ConsistencyGoal, CumulativeGoal } from '../types';
+import { getPlayerOverall, getGoalProgress, getHabitProgress, getHabitStreak, getRateProgress, getCumulativeProgress } from '../lib/storage';
+import { HabitGoal, RateGoal, CumulativeGoal } from '../types';
 import OnboardingFlow from '../components/OnboardingFlow';
 import PlayerCard from '../components/PlayerCard';
 import CheckInModal from '../components/CheckInModal';
@@ -20,11 +20,6 @@ function goalBarInfo(goal: Goal): { pct: number; color: string; label: string } 
     const { pct } = getHabitProgress(goal as HabitGoal);
     const c = pct >= 80 ? '#4ade80' : '#60a5fa';
     return { pct, color: c, label: `${pct}%` };
-  }
-  if (goal.type === 'consistency') {
-    const { rate, progressPct } = getConsistencyProgress(goal as ConsistencyGoal);
-    const c = progressPct >= 100 ? '#f9c923' : '#fb923c';
-    return { pct: progressPct, color: c, label: `${rate}%` };
   }
   if (goal.type === 'rate') {
     const { rate, progressPct } = getRateProgress(goal as RateGoal);
@@ -440,7 +435,6 @@ export default function Home() {
           onSubmitRate={(made,attempts,n,d) => handleCheckIn(() => sb.logRate(checkIn.goal.id, made, attempts, n, d))}
           onSubmitHabit={(c,n,d) => handleCheckIn(() => sb.logHabit(checkIn.goal.id, c, n, d))}
           onSubmitPto={(d) => handleCheckIn(() => sb.logPto(checkIn.goal.id, d))}
-          onSubmitConsistency={(h,t,n,d) => handleCheckIn(() => sb.logConsistency(checkIn.goal.id, h, t, n, d))}
           onSubmitCumulative={(a,n,d) => handleCheckIn(() => sb.logCumulative(checkIn.goal.id, a, n, d))}
           onClear={handleClear}
           onClose={() => setCheckIn(null)}/>

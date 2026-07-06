@@ -9,17 +9,16 @@ interface Props {
 }
 
 type Slot = 'daily' | 'weekly' | 'monthly';
-type GoalType = 'rate' | 'habit' | 'consistency' | 'cumulative';
+type GoalType = 'rate' | 'habit' | 'cumulative';
 
 const TYPE_INFO: Record<GoalType, { color: string; label: string; desc: string }> = {
   habit:       { color: '#4ade80', label: '✅ Daily habit',    desc: 'Yes/no each day, track % completion' },
-  consistency: { color: '#fb923c', label: '🎯 Consistency',    desc: 'X out of Y instances — hit rate' },
   rate:        { color: '#60a5fa', label: '📈 Rate tracker',  desc: 'Log a number over time, see the delta' },
   cumulative:  { color: '#a78bfa', label: '🔢 Cumulative',     desc: 'Add up totals, track pace vs target' },
 };
 
 const SLOT_TYPES: Record<Slot, GoalType[]> = {
-  daily:   ['habit', 'consistency'],
+  daily:   ['habit'],
   weekly:  ['rate', 'cumulative'],
   monthly: ['rate', 'cumulative'],
 };
@@ -52,8 +51,6 @@ export default function AddGoalModal({ player, onAdd, onClose }: Props) {
     const base = { slot: missingSlot, title: title.trim(), description: desc.trim(), emoji, logs: [] };
     if (type === 'rate') {
       onAdd({ ...base, type: 'rate', unit: unit||'rate', targetRate: parseInt(targetRate)||15 });
-    } else if (type === 'consistency') {
-      onAdd({ ...base, type: 'consistency', targetRate: parseInt(targetRate)||80 });
     } else if (type === 'cumulative') {
       onAdd({ ...base, type: 'cumulative', targetTotal: parseFloat(targetTotal)||100, unit: cumUnit||'items', targetPeriod: cumPeriod });
     } else {
@@ -92,16 +89,18 @@ export default function AddGoalModal({ player, onAdd, onClose }: Props) {
         <input type="text" placeholder="Goal title" value={title} onChange={e=>setTitle(e.target.value)} className="w-full mb-2" autoFocus/>
         <textarea placeholder="What does success look like?" value={desc} onChange={e=>setDesc(e.target.value)} className="w-full resize-none mb-3" rows={2}/>
 
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          {allowedTypes.map(t => (
-            <button key={t} onClick={() => setType(t)}
-              className="p-2 rounded-lg text-xs font-bold text-center transition-all"
-              style={{ background: type===t?'rgba(249,201,35,0.15)':'rgba(255,255,255,0.06)', border:`2px solid ${type===t?'rgba(249,201,35,0.5)':'transparent'}`, color: type===t?'#f9c923':'rgba(255,255,255,0.5)' }}>
-              <div>{TYPE_INFO[t].label}</div>
-              <div className="text-[9px] mt-0.5 font-normal opacity-70">{TYPE_INFO[t].desc}</div>
-            </button>
-          ))}
-        </div>
+        {allowedTypes.length > 1 && (
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            {allowedTypes.map(t => (
+              <button key={t} onClick={() => setType(t)}
+                className="p-2 rounded-lg text-xs font-bold text-center transition-all"
+                style={{ background: type===t?'rgba(249,201,35,0.15)':'rgba(255,255,255,0.06)', border:`2px solid ${type===t?'rgba(249,201,35,0.5)':'transparent'}`, color: type===t?'#f9c923':'rgba(255,255,255,0.5)' }}>
+                <div>{TYPE_INFO[t].label}</div>
+                <div className="text-[9px] mt-0.5 font-normal opacity-70">{TYPE_INFO[t].desc}</div>
+              </button>
+            ))}
+          </div>
+        )}
 
         {type==='rate' && (
           <div className="grid grid-cols-2 gap-2 mb-3">
@@ -113,12 +112,6 @@ export default function AddGoalModal({ player, onAdd, onClose }: Props) {
               <label className="text-xs text-white/40 mb-1 block">Label</label>
               <input type="text" placeholder="e.g. set rate" value={unit} onChange={e=>setUnit(e.target.value)} className="w-full"/>
             </div>
-          </div>
-        )}
-        {type==='consistency' && (
-          <div className="mb-3">
-            <label className="text-xs text-white/40 mb-1 block">Target hit rate (%)</label>
-            <input type="number" placeholder="e.g. 90" value={targetRate} onChange={e=>setTargetRate(e.target.value)} className="w-full"/>
           </div>
         )}
         {type==='cumulative' && (

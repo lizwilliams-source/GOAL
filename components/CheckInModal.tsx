@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Goal, RateGoal, HabitGoal, ConsistencyGoal, CumulativeGoal, Player } from '../types';
-import { getRateProgress, getHabitProgress, getConsistencyProgress, getCumulativeProgress } from '../lib/storage';
+import { Goal, RateGoal, HabitGoal, CumulativeGoal, Player } from '../types';
+import { getRateProgress, getHabitProgress, getCumulativeProgress } from '../lib/storage';
 import AnimalAvatarImg from './AnimalAvatar';
 
 interface Props {
@@ -9,7 +9,6 @@ interface Props {
   onSubmitRate: (made: number, attempts: number, note?: string, date?: string) => void;
   onSubmitHabit: (completed: boolean, note?: string, date?: string) => void;
   onSubmitPto: (date?: string) => void;
-  onSubmitConsistency: (handled: number, total: number, note?: string, date?: string) => void;
   onSubmitCumulative: (amount: number, note?: string, date?: string) => void;
   onClear: (date: string) => void;
   onClose: () => void;
@@ -46,7 +45,6 @@ function statusBg(status: DateStatus, goalType: string): string {
   if (status === 'pto') return 'rgba(20,184,166,0.55)';
   if (status === 'logged') {
     if (goalType === 'rate') return 'rgba(96,165,250,0.55)';
-    if (goalType === 'consistency') return 'rgba(251,146,60,0.55)';
     if (goalType === 'cumulative') return 'rgba(167,139,250,0.55)';
   }
   return '';
@@ -275,75 +273,7 @@ function CumulativeCheckIn({ goal, onSubmit }: { goal: CumulativeGoal; onSubmit:
   );
 }
 
-// ---- CONSISTENCY check-in ----
-function ConsistencyCheckIn({ goal, onSubmit }: { goal: ConsistencyGoal; onSubmit: (h: number, t: number, n?: string) => void }) {
-  const [handled, setHandled] = useState('');
-  const [total, setTotal] = useState('');
-  const [note, setNote] = useState('');
-  const { totalHandled, totalInstances, rate, recentLogs } = getConsistencyProgress(goal);
-  const h = parseInt(handled) || 0, t = parseInt(total) || 0;
-  const sessionRate = t > 0 ? Math.round((h / t) * 100) : null;
-
-  return (
-    <div>
-      {totalInstances > 0 && (
-        <div className="mb-4 p-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.3)' }}>
-          <div className="flex items-baseline justify-between mb-1">
-            <div>
-              <span className="text-2xl font-black" style={{ fontFamily: 'Black Han Sans', color: rate >= goal.targetRate ? '#f9c923' : '#60a5fa' }}>{rate}%</span>
-              <span className="text-xs text-white/40 ml-2">overall hit rate</span>
-            </div>
-            <span className="text-xs text-white/40">{totalHandled}/{totalInstances} total</span>
-          </div>
-          <div className="flex h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.4)' }}>
-            <div className="h-full rounded-l-full transition-all duration-700" style={{ width: `${rate}%`, background: rate >= goal.targetRate ? '#f9c923' : '#4ade80' }}/>
-            <div className="h-full flex-1 rounded-r-full" style={{ background: 'rgba(220,38,38,0.4)' }}/>
-          </div>
-          <div className="flex justify-between mt-1 text-[10px] text-white/30">
-            <span>✅ {totalHandled} handled</span><span>Target: {goal.targetRate}%</span><span>❌ {totalInstances - totalHandled} missed</span>
-          </div>
-          {recentLogs.length > 0 && (
-            <div className="mt-2 space-y-0.5 border-t border-white/8 pt-2">
-              {recentLogs.map((l, i) => (
-                <div key={i} className="flex items-center gap-2 text-[10px] text-white/40">
-                  <span>{new Date(l.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                  <span className="font-bold text-white/60">{l.handled}/{l.total}</span>
-                  <span style={{ color: Math.round((l.handled/l.total)*100) >= goal.targetRate ? '#4ade80' : '#f87171' }}>{Math.round((l.handled/l.total)*100)}%</span>
-                  {l.note && <span className="truncate">&quot;{l.note}&quot;</span>}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-      <label className="text-xs text-white/50 uppercase tracking-wider mb-3 block">Log this session</label>
-      <div className="grid grid-cols-2 gap-3 mb-2">
-        <div>
-          <div className="text-xs text-white/40 mb-1.5">Handled well ✅</div>
-          <input type="number" min="0" placeholder="e.g. 3" value={handled} onChange={e => setHandled(e.target.value)} className="w-full" autoFocus/>
-        </div>
-        <div>
-          <div className="text-xs text-white/40 mb-1.5">Total instances</div>
-          <input type="number" min="0" placeholder="e.g. 4" value={total} onChange={e => setTotal(e.target.value)} className="w-full"/>
-        </div>
-      </div>
-      {sessionRate !== null && t > 0 && (
-        <div className="text-center mb-3 py-2 rounded-lg text-sm font-bold"
-          style={{ background: 'rgba(0,0,0,0.25)', color: sessionRate >= goal.targetRate ? '#4ade80' : '#fb923c' }}>
-          This session: {h}/{t} = {sessionRate}%{sessionRate >= goal.targetRate ? ' 🔥 Above target' : ` (target ${goal.targetRate}%)`}
-        </div>
-      )}
-      <textarea placeholder="Note (optional)" value={note} onChange={e => setNote(e.target.value)} className="w-full resize-none mb-4" rows={2}/>
-      <button onClick={() => { if (h > 0 && t > 0 && h <= t) onSubmit(h, t, note || undefined); }} disabled={!(h > 0 && t > 0 && h <= t)}
-        className="w-full py-2.5 rounded-xl font-black text-sm disabled:opacity-40 hover:scale-105 transition-transform"
-        style={{ background: '#f9c923', color: '#1a1a1a', fontFamily: 'Oswald' }}>
-        ⚽ LOG SESSION
-      </button>
-    </div>
-  );
-}
-
-export default function CheckInModal({ player, goal, onSubmitRate, onSubmitHabit, onSubmitPto, onSubmitConsistency, onSubmitCumulative, onClear, onClose }: Props) {
+export default function CheckInModal({ player, goal, onSubmitRate, onSubmitHabit, onSubmitPto, onSubmitCumulative, onClear, onClose }: Props) {
   const [done, setDone] = useState(false);
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
 
@@ -387,9 +317,6 @@ export default function CheckInModal({ player, goal, onSubmitRate, onSubmitHabit
           <HabitCheckIn goal={goal} date={selectedDate}
             onSubmit={(c, n) => { onSubmitHabit(c, n, selectedDate); setDone(true); }}
             onSubmitPto={() => { onSubmitPto(selectedDate); setDone(true); }}/>
-        )}
-        {goal.type === 'consistency' && (
-          <ConsistencyCheckIn goal={goal} onSubmit={(h, t, n) => { onSubmitConsistency(h, t, n, selectedDate); setDone(true); }}/>
         )}
         {goal.type === 'cumulative' && (
           <CumulativeCheckIn goal={goal} onSubmit={(a, n) => { onSubmitCumulative(a, n, selectedDate); setDone(true); }}/>

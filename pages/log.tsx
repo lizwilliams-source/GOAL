@@ -17,7 +17,6 @@ function timeAgo(iso: string): string {
 
 function goalTypeColor(type: string): string {
   if (type === 'habit') return '#4ade80';
-  if (type === 'consistency') return '#fb923c';
   if (type === 'rate') return '#60a5fa';
   if (type === 'cumulative') return '#a78bfa';
   return '#f9c923';

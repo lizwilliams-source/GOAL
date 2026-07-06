@@ -1,4 +1,4 @@
-import { AppData, Player, Goal, RateGoal, HabitGoal, ConsistencyGoal, CumulativeGoal } from '../types';
+import { AppData, Player, Goal, RateGoal, HabitGoal, CumulativeGoal } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
 const KEY = 'gooooal_v4';
@@ -77,20 +77,6 @@ export function logHabit(data: AppData, playerId: string, goalId: string, comple
       ? g.logs.map(l => l.date === today ? { ...l, completed, note } : l)
       : [...g.logs, { date: today, completed, note }];
     return { ...g, logs, updatedAt: new Date().toISOString() } as HabitGoal;
-  });
-  return updatePlayer(data, playerId, { goals });
-}
-
-// Log a consistency session (handled X out of Y)
-export function logConsistency(data: AppData, playerId: string, goalId: string, handled: number, total: number, note?: string): AppData {
-  const player = data.players.find(p => p.id === playerId);
-  if (!player) return data;
-  const today = new Date().toISOString().split('T')[0];
-  const goals = player.goals.map(g => {
-    if (g.id !== goalId || g.type !== 'consistency') return g;
-    // Each session is its own entry (multiple per day allowed)
-    const logs = [...g.logs, { date: today, handled, total, note }];
-    return { ...g, logs, updatedAt: new Date().toISOString() } as ConsistencyGoal;
   });
   return updatePlayer(data, playerId, { goals });
 }
@@ -190,20 +176,6 @@ export function getHabitStreak(goal: HabitGoal): { current: number; best: number
   return { current, best };
 }
 
-export function getConsistencyProgress(goal: ConsistencyGoal): {
-  totalHandled: number; totalInstances: number; rate: number; progressPct: number;
-  recentLogs: typeof goal.logs;
-} {
-  const month = thisMonthStr();
-  const monthLogs = goal.logs.filter(l => l.date.startsWith(month));
-  const totalHandled = monthLogs.reduce((s, l) => s + l.handled, 0);
-  const totalInstances = monthLogs.reduce((s, l) => s + l.total, 0);
-  const rate = totalInstances === 0 ? 0 : Math.round((totalHandled / totalInstances) * 100);
-  const progressPct = goal.targetRate === 0 ? 100 : Math.min(100, Math.round((rate / goal.targetRate) * 100));
-  const recentLogs = [...monthLogs].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
-  return { totalHandled, totalInstances, rate, progressPct, recentLogs };
-}
-
 export function getCumulativeProgress(goal: CumulativeGoal): {
   total: number; progressPct: number; periodLabel: string; onPace: boolean; pacePct: number;
 } {
@@ -238,7 +210,6 @@ export function getCumulativeProgress(goal: CumulativeGoal): {
 export function getGoalProgress(goal: Goal): number {
   if (goal.type === 'rate') return getRateProgress(goal).progressPct;
   if (goal.type === 'habit') return getHabitProgress(goal).pct;
-  if (goal.type === 'consistency') return getConsistencyProgress(goal).progressPct;
   if (goal.type === 'cumulative') {
     const { progressPct, pacePct } = getCumulativeProgress(goal);
     // Score relative to pace so cumulative goals are fairly comparable to other types.

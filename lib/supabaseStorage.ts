@@ -1,5 +1,5 @@
 import { getSupabase } from './supabase';
-import { AppData, Player, Goal, RateGoal, HabitGoal, ConsistencyGoal, CumulativeGoal, AnimalKind } from '../types';
+import { AppData, Player, Goal, RateGoal, HabitGoal, CumulativeGoal, AnimalKind } from '../types';
 
 export async function loadData(): Promise<AppData> {
   const [
@@ -7,14 +7,12 @@ export async function loadData(): Promise<AppData> {
     { data: goals },
     { data: rateLogs },
     { data: habitLogs },
-    { data: consistencyLogs },
     { data: cumulativeLogs },
   ] = await Promise.all([
     getSupabase().from('players').select('*').order('created_at'),
     getSupabase().from('goals').select('*').order('created_at'),
     getSupabase().from('rate_logs').select('*').order('date'),
     getSupabase().from('habit_logs').select('*').order('date'),
-    getSupabase().from('consistency_logs').select('*').order('date'),
     getSupabase().from('cumulative_logs').select('*').order('date'),
   ]);
 
@@ -22,12 +20,12 @@ export async function loadData(): Promise<AppData> {
   const mappedPlayers: Player[] = (players ?? []).map((p: any) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const playerGoals: Goal[] = (goals ?? []).filter((g: any) => g.player_id === p.id).map((g: any): Goal | null => {
-      const inferredSlot = (g.slot ?? (g.type === 'habit' || g.type === 'consistency' ? 'daily' : 'monthly')) as 'daily' | 'weekly' | 'monthly';
+      const inferredSlot = (g.slot ?? (g.type === 'habit' ? 'daily' : 'monthly')) as 'daily' | 'weekly' | 'monthly';
       if (g.type === 'rate') return {
         type: 'rate', slot: inferredSlot, id: g.id, title: g.title, description: g.description ?? '',
         emoji: g.emoji ?? '🎯', unit: g.unit ?? 'rate', targetRate: g.target_rate ?? 15,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        logs: (consistencyLogs ?? []).filter((l: any) => l.goal_id === g.id).map((l: any) => ({ date: l.date, made: l.handled, attempts: l.total, note: l.note ?? undefined })),
+        logs: (rateLogs ?? []).filter((l: any) => l.goal_id === g.id).map((l: any) => ({ date: l.date, made: l.made, attempts: l.attempts, note: l.note ?? undefined })),
         createdAt: g.created_at, updatedAt: g.created_at,
       } as RateGoal;
       if (g.type === 'habit') return {
@@ -37,13 +35,6 @@ export async function loadData(): Promise<AppData> {
         logs: (habitLogs ?? []).filter((l: any) => l.goal_id === g.id).map((l: any) => ({ date: l.date, completed: l.completed, note: l.note ?? undefined, loggedAt: l.created_at ?? undefined })),
         createdAt: g.created_at, updatedAt: g.created_at,
       } as HabitGoal;
-      if (g.type === 'consistency') return {
-        type: 'consistency', slot: inferredSlot, id: g.id, title: g.title, description: g.description ?? '',
-        emoji: g.emoji ?? '🎯', targetRate: g.target_rate ?? 80,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        logs: (consistencyLogs ?? []).filter((l: any) => l.goal_id === g.id).map((l: any) => ({ date: l.date, handled: l.handled, total: l.total, note: l.note ?? undefined })),
-        createdAt: g.created_at, updatedAt: g.created_at,
-      } as ConsistencyGoal;
       if (g.type === 'cumulative') return {
         type: 'cumulative', slot: inferredSlot, id: g.id, title: g.title, description: g.description ?? '',
         emoji: g.emoji ?? '🎯', unit: g.unit ?? 'items', targetTotal: g.target_total ?? 100,
@@ -92,9 +83,6 @@ export async function addGoal(playerId: string, goal: Omit<Goal, 'id' | 'created
   if (goal.type === 'rate') {
     const g = goal as RateGoal;
     row.unit = g.unit; row.target_rate = g.targetRate;
-  } else if (goal.type === 'consistency') {
-    const g = goal as ConsistencyGoal;
-    row.target_rate = g.targetRate;
   } else if (goal.type === 'cumulative') {
     const g = goal as CumulativeGoal;
     row.unit = g.unit; row.target_total = g.targetTotal;
@@ -109,8 +97,8 @@ export async function deleteGoal(goalId: string): Promise<void> {
 
 export async function logRate(goalId: string, made: number, attempts: number, note?: string, date?: string): Promise<void> {
   const d = date ?? new Date().toISOString().split('T')[0];
-  await getSupabase().from('consistency_logs')
-    .insert({ goal_id: goalId, date: d, handled: made, total: attempts, note: note ?? null });
+  await getSupabase().from('rate_logs')
+    .insert({ goal_id: goalId, date: d, made, attempts, note: note ?? null });
 }
 
 export async function logPto(goalId: string, date?: string): Promise<void> {
@@ -123,12 +111,6 @@ export async function logHabit(goalId: string, completed: boolean, note?: string
   const d = date ?? new Date().toISOString().split('T')[0];
   await getSupabase().from('habit_logs')
     .upsert({ goal_id: goalId, date: d, completed, note: note ?? null }, { onConflict: 'goal_id,date' });
-}
-
-export async function logConsistency(goalId: string, handled: number, total: number, note?: string, date?: string): Promise<void> {
-  const d = date ?? new Date().toISOString().split('T')[0];
-  await getSupabase().from('consistency_logs')
-    .insert({ goal_id: goalId, date: d, handled, total, note: note ?? null });
 }
 
 export async function logCumulative(goalId: string, amount: number, note?: string, date?: string): Promise<void> {
@@ -150,12 +132,9 @@ export interface ActivityItem {
 }
 
 export async function getRecentActivity(limit = 20): Promise<ActivityItem[]> {
-  const [{ data: habitLogs }, { data: consistencyLogs }, { data: cumulativeLogs }] = await Promise.all([
+  const [{ data: habitLogs }, { data: cumulativeLogs }] = await Promise.all([
     getSupabase().from('habit_logs')
       .select('id, date, completed, note, created_at, goals(type, title, emoji, player_id, players(name, avatar))')
-      .order('created_at', { ascending: false }).limit(limit),
-    getSupabase().from('consistency_logs')
-      .select('id, date, handled, total, note, created_at, goals(type, title, emoji, player_id, players(name, avatar))')
       .order('created_at', { ascending: false }).limit(limit),
     getSupabase().from('cumulative_logs')
       .select('id, date, amount, note, created_at, goals(type, title, emoji, unit, player_id, players(name, avatar))')
@@ -171,10 +150,7 @@ export async function getRecentActivity(limit = 20): Promise<ActivityItem[]> {
     let summary = '';
     if (isPto) summary = '🏖️ PTO';
     else if (type === 'habit') summary = l.completed ? '✅ Hit it' : '❌ Missed';
-    else if (type === 'consistency' || (type === 'consistency' && goal.type === 'rate')) {
-      const rate = l.total > 0 ? Math.round((l.handled / l.total) * 100) : 0;
-      summary = `${l.handled}/${l.total} → ${rate}%`;
-    } else if (type === 'cumulative') summary = `+${l.amount} ${goal.unit ?? ''}`.trim();
+    else if (type === 'cumulative') summary = `+${l.amount} ${goal.unit ?? ''}`.trim();
     return {
       id: l.id, createdAt: l.created_at,
       playerName: player.name, playerAvatar: player.avatar,
@@ -185,7 +161,6 @@ export async function getRecentActivity(limit = 20): Promise<ActivityItem[]> {
 
   const all = [
     ...map(habitLogs ?? [], 'habit'),
-    ...map(consistencyLogs ?? [], 'consistency'),
     ...map(cumulativeLogs ?? [], 'cumulative'),
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, limit);
 
@@ -219,8 +194,7 @@ export async function resetAllData(): Promise<void> {
 
 export async function clearLog(goalId: string, goalType: string, date: string): Promise<void> {
   const tables: Record<string, string> = {
-    rate: 'rate_logs', habit: 'habit_logs',
-    consistency: 'consistency_logs', cumulative: 'cumulative_logs',
+    rate: 'rate_logs', habit: 'habit_logs', cumulative: 'cumulative_logs',
   };
   const table = tables[goalType];
   if (table) await getSupabase().from(table).delete().eq('goal_id', goalId).eq('date', date);

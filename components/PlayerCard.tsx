@@ -1,6 +1,6 @@
 import React from 'react';
-import { Player, Goal, RateGoal, HabitGoal, ConsistencyGoal, CumulativeGoal } from '../types';
-import { getGoalProgress, getPlayerOverall, getRateProgress, getHabitProgress, getHabitStreak, getConsistencyProgress, getCumulativeProgress } from '../lib/storage';
+import { Player, Goal, RateGoal, HabitGoal, CumulativeGoal } from '../types';
+import { getGoalProgress, getPlayerOverall, getRateProgress, getHabitProgress, getHabitStreak, getCumulativeProgress } from '../lib/storage';
 import AnimalAvatarImg from './AnimalAvatar';
 
 interface Props {
@@ -173,72 +173,6 @@ function CumulativeDisplay({ goal, onLog, onDelete }: { goal: CumulativeGoal; on
 }
 
 // ---- Consistency goal display ----
-function ConsistencyDisplay({ goal, onLog, onDelete }: { goal: ConsistencyGoal; onLog: () => void; onDelete: () => void }) {
-  const { totalHandled, totalInstances, rate, progressPct, recentLogs } = getConsistencyProgress(goal);
-  const complete = rate >= goal.targetRate && totalInstances >= 5;
-
-  return (
-    <div className="rounded-xl p-3" style={{ background: 'rgba(0,0,0,0.3)', border: `1px solid ${complete ? 'rgba(249,201,35,0.35)' : 'rgba(255,255,255,0.07)'}` }}>
-      {complete && <div className="text-[9px] font-black text-yellow-400 tracking-widest mb-1.5">⚽ GOAL REACHED!</div>}
-      <div className="flex items-start gap-2 mb-2">
-        <span className="text-xl flex-shrink-0">{goal.emoji}</span>
-        <div className="flex-1 min-w-0">
-          <div className="text-xs font-bold text-white leading-snug">{goal.title}</div>
-          <div className="text-[11px] text-white/40 mt-0.5">{goal.description}</div>
-          <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider" style={{ background: 'rgba(251,146,60,0.1)', color: '#fb923c', border: '1px solid rgba(251,146,60,0.2)' }}>🎯 Consistency</span>
-        </div>
-        <div className="flex gap-1 flex-shrink-0">
-          <button onClick={onLog} className="text-xs px-3 py-2 rounded-lg font-bold active:scale-95 transition-transform" style={{ background: '#f9c923', color: '#1a1a1a' }}>+ Log</button>
-          <button onClick={onDelete} className="text-sm w-9 h-9 flex items-center justify-center rounded-lg text-white/30 hover:text-red-400 active:text-red-400 transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}>✕</button>
-        </div>
-      </div>
-      {/* Big rate */}
-      <div className="flex items-baseline gap-2 mb-1.5">
-        <span className="text-xl font-black" style={{ fontFamily: 'Black Han Sans', color: rate >= goal.targetRate ? '#f9c923' : '#fb923c' }}>
-          {totalInstances > 0 ? `${rate}%` : '—'}
-        </span>
-        <span className="text-xs text-white/40">hit rate</span>
-        <span className="text-[10px] text-white/30 ml-auto">{totalHandled}/{totalInstances} total</span>
-      </div>
-      {/* Split bar */}
-      {totalInstances > 0 && (
-        <div className="flex h-3 rounded-full overflow-hidden mb-1" style={{ background: 'rgba(0,0,0,0.4)', gap: '1px' }}>
-          <div className="h-full rounded-l-full transition-all duration-700" style={{ width: `${rate}%`, background: rate >= goal.targetRate ? '#f9c923' : '#4ade80' }}/>
-          <div className="h-full flex-1 rounded-r-full" style={{ background: 'rgba(220,38,38,0.45)' }}/>
-        </div>
-      )}
-      <div className="flex justify-between text-[10px] text-white/30 mb-1.5">
-        <span>✅ {totalHandled}</span>
-        <span>Target: {goal.targetRate}%</span>
-        <span>❌ {totalInstances - totalHandled}</span>
-      </div>
-      {/* Recent sessions */}
-      {recentLogs.length > 0 && (
-        <div className="space-y-0.5 border-t border-white/8 pt-2">
-          {recentLogs.slice(0,3).map((l, i) => {
-            const sr = Math.round((l.handled / l.total) * 100);
-            return (
-              <div key={i} className="flex items-center gap-2 text-[10px] text-white/35">
-                <span>{new Date(l.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                <span className="font-bold text-white/55">{l.handled}/{l.total}</span>
-                <span style={{ color: sr >= goal.targetRate ? '#4ade80' : '#f87171' }}>{sr}%</span>
-                {l.note && <span className="truncate text-white/25">"{l.note}"</span>}
-              </div>
-            );
-          })}
-        </div>
-      )}
-      <div className="mt-2">
-        <div className="flex justify-between text-[10px] text-white/30 mb-1">
-          <span>Progress to {goal.targetRate}% target</span>
-          <span className="font-bold" style={{ color: complete ? '#f9c923' : 'rgba(255,255,255,0.6)' }}>{progressPct}%</span>
-        </div>
-        <Bar pct={progressPct}/>
-      </div>
-    </div>
-  );
-}
-
 const SLOT_COLOR: Record<string, string> = { daily: '#4ade80', weekly: '#60a5fa', monthly: '#a78bfa' };
 const SLOT_LABEL: Record<string, string> = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' };
 
@@ -271,11 +205,6 @@ export default function PlayerCard({
       const { pct } = getHabitProgress(goal);
       const c = pct >= 80 ? '#4ade80' : '#60a5fa';
       return { emoji: goal.emoji, pct, color: c, label: `${pct}%` };
-    }
-    if (goal.type === 'consistency') {
-      const { rate, progressPct } = getConsistencyProgress(goal);
-      const c = rate >= goal.targetRate ? '#f9c923' : '#fb923c';
-      return { emoji: goal.emoji, pct: progressPct, color: c, label: `${rate}%` };
     }
     if (goal.type === 'rate') {
       const { rate, progressPct } = getRateProgress(goal);
@@ -333,7 +262,7 @@ export default function PlayerCard({
                   <div className="text-[9px] font-black uppercase tracking-widest mb-1 px-0.5" style={{ color }}>{label} Goal</div>
                   {goal.type === 'rate'        && <RateDisplay        goal={goal} {...props}/>}
                   {goal.type === 'habit'       && <HabitDisplay       goal={goal} {...props}/>}
-                  {goal.type === 'consistency' && <ConsistencyDisplay goal={goal} {...props}/>}
+
                   {goal.type === 'cumulative'  && <CumulativeDisplay  goal={goal} {...props}/>}
                 </div>
               );

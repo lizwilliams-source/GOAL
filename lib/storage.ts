@@ -185,7 +185,11 @@ export function getCumulativeProgress(goal: CumulativeGoal): {
   let periodLabel: string;
   let pacePct: number;
 
-  if (goal.targetPeriod === 'weekly') {
+  if (goal.targetPeriod === 'daily') {
+    total = goal.logs.filter(l => l.date === today).reduce((s, l) => s + l.amount, 0);
+    periodLabel = 'today';
+    pacePct = 100;
+  } else if (goal.targetPeriod === 'weekly') {
     const dow = now.getDay();
     const monday = new Date(now);
     monday.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));

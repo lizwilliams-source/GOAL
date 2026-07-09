@@ -23,13 +23,11 @@ function pickRandomTrack() {
 }
 
 function formatMoney(n: number): string {
-  if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
-  if (n >= 1000) return `$${Math.round(n / 1000)}K`;
-  return `$${Math.round(n).toLocaleString()}`;
+  return formatMoneyFull(n);
 }
 
 function formatMoneyFull(n: number): string {
-  return '$' + Math.round(n).toLocaleString();
+  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 const MONEY_EMOJIS = ['💰','💵','💸','🤑','💴','💶','💷'];

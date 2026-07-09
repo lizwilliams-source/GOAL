@@ -18,7 +18,7 @@ const TYPE_INFO: Record<GoalType, { color: string; label: string; desc: string }
 };
 
 const SLOT_TYPES: Record<Slot, GoalType[]> = {
-  daily:   ['habit'],
+  daily:   ['habit', 'cumulative'],
   weekly:  ['rate', 'cumulative'],
   monthly: ['rate', 'cumulative'],
 };
@@ -44,7 +44,9 @@ export default function AddGoalModal({ player, onAdd, onClose }: Props) {
   const [targetRate, setTargetRate] = useState('15');
   const [targetTotal, setTargetTotal] = useState('');
   const [cumUnit, setCumUnit] = useState('');
-  const [cumPeriod, setCumPeriod] = useState<'monthly' | 'weekly'>(missingSlot === 'weekly' ? 'weekly' : 'monthly');
+  const [cumPeriod, setCumPeriod] = useState<'daily' | 'monthly' | 'weekly'>(
+    missingSlot === 'weekly' ? 'weekly' : missingSlot === 'daily' ? 'daily' : 'monthly'
+  );
 
   const submit = () => {
     if (!title.trim()) return;
@@ -117,7 +119,7 @@ export default function AddGoalModal({ player, onAdd, onClose }: Props) {
         {type==='cumulative' && (
           <div className="mb-3 space-y-2">
             <div className="flex gap-2">
-              {(['monthly', 'weekly'] as const).map(p => (
+              {(['daily', 'weekly', 'monthly'] as const).map(p => (
                 <button key={p} onClick={() => setCumPeriod(p)}
                   className="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all capitalize"
                   style={{ background: cumPeriod===p ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${cumPeriod===p ? 'rgba(167,139,250,0.6)' : 'transparent'}`, color: cumPeriod===p ? '#a78bfa' : 'rgba(255,255,255,0.4)' }}>
@@ -127,7 +129,7 @@ export default function AddGoalModal({ player, onAdd, onClose }: Props) {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-xs text-white/40 mb-1 block">{cumPeriod === 'weekly' ? 'Weekly' : 'Monthly'} target</label>
+                <label className="text-xs text-white/40 mb-1 block">{cumPeriod === 'weekly' ? 'Weekly' : cumPeriod === 'daily' ? 'Daily' : 'Monthly'} target</label>
                 <input type="number" placeholder="e.g. 100" value={targetTotal} onChange={e=>setTargetTotal(e.target.value)} className="w-full"/>
               </div>
               <div>

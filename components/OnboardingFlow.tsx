@@ -19,7 +19,7 @@ const TYPE_INFO: Record<GoalType, { color: string; label: string; desc: string }
 };
 
 const SLOT_TYPES: Record<Slot, GoalType[]> = {
-  daily:   ['habit'],
+  daily:   ['habit', 'cumulative'],
   weekly:  ['rate', 'cumulative'],
   monthly: ['rate', 'cumulative'],
 };
@@ -36,7 +36,9 @@ function CustomForm({ slot, onAdd }: { slot: Slot; onAdd: (g: Goal) => void }) {
   const [targetRate, setTargetRate] = useState('15');
   const [targetTotal, setTargetTotal] = useState('');
   const [cumUnit, setCumUnit] = useState('');
-  const [cumPeriod, setCumPeriod] = useState<'monthly' | 'weekly'>(slot === 'weekly' ? 'weekly' : 'monthly');
+  const [cumPeriod, setCumPeriod] = useState<'daily' | 'monthly' | 'weekly'>(
+    slot === 'weekly' ? 'weekly' : slot === 'daily' ? 'daily' : 'monthly'
+  );
 
   const submit = () => {
     if (!title.trim()) return;
@@ -82,7 +84,7 @@ function CustomForm({ slot, onAdd }: { slot: Slot; onAdd: (g: Goal) => void }) {
       {type==='cumulative' && (
         <div className="space-y-2">
           <div className="flex gap-2">
-            {(['monthly', 'weekly'] as const).map(p => (
+            {(['daily', 'weekly', 'monthly'] as const).map(p => (
               <button key={p} onClick={() => setCumPeriod(p)}
                 className="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all capitalize"
                 style={{ background: cumPeriod===p ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${cumPeriod===p ? 'rgba(167,139,250,0.6)' : 'transparent'}`, color: cumPeriod===p ? '#a78bfa' : 'rgba(255,255,255,0.4)' }}>
@@ -92,7 +94,7 @@ function CustomForm({ slot, onAdd }: { slot: Slot; onAdd: (g: Goal) => void }) {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs text-white/40 mb-1 block">{cumPeriod === 'weekly' ? 'Weekly' : 'Monthly'} target</label>
+              <label className="text-xs text-white/40 mb-1 block">{cumPeriod === 'weekly' ? 'Weekly' : cumPeriod === 'daily' ? 'Daily' : 'Monthly'} target</label>
               <input type="number" placeholder="e.g. 100" value={targetTotal} onChange={e=>setTargetTotal(e.target.value)} className="w-full"/>
             </div>
             <div>
@@ -145,11 +147,12 @@ export default function OnboardingFlow({ takenAvatars, onComplete }: Props) {
   const [weeklyGoal, setWeeklyGoal] = useState<Goal | null>(null);
   const [monthlyGoal, setMonthlyGoal] = useState<Goal | null>(null);
 
-  const allSet = !!dailyGoal && !!weeklyGoal && !!monthlyGoal;
+  const allSet = !!dailyGoal && !!weeklyGoal;
 
   const finish = () => {
     if (!animal || !name.trim() || !allSet) return;
-    onComplete({ name: name.trim(), avatar: animal, jerseyColor: '', goals: [dailyGoal!, weeklyGoal!, monthlyGoal!], onboarded: true });
+    const goals = [dailyGoal!, weeklyGoal!, ...(monthlyGoal ? [monthlyGoal] : [])];
+    onComplete({ name: name.trim(), avatar: animal, jerseyColor: '', goals, onboarded: true });
   };
 
   const stepIdx = step === 'avatar' ? 0 : step === 'name' ? 1 : 2;
@@ -236,7 +239,7 @@ export default function OnboardingFlow({ takenAvatars, onComplete }: Props) {
             <div className="space-y-4 mb-4">
               <GoalSlot label="Daily Goal"   color="#4ade80" goal={dailyGoal}   slot="daily"   onSelect={setDailyGoal}   onRemove={() => setDailyGoal(null)}/>
               <GoalSlot label="Weekly Goal"  color="#60a5fa" goal={weeklyGoal}  slot="weekly"  onSelect={setWeeklyGoal}  onRemove={() => setWeeklyGoal(null)}/>
-              <GoalSlot label="Monthly Goal" color="#a78bfa" goal={monthlyGoal} slot="monthly" onSelect={setMonthlyGoal} onRemove={() => setMonthlyGoal(null)}/>
+              <GoalSlot label="Monthly Goal (optional)" color="#a78bfa" goal={monthlyGoal} slot="monthly" onSelect={setMonthlyGoal} onRemove={() => setMonthlyGoal(null)}/>
             </div>
 
             <div className="flex gap-3">

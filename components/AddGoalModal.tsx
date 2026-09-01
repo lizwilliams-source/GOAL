@@ -24,17 +24,16 @@ const SLOT_TYPES: Record<Slot, GoalType[]> = {
 };
 
 const SLOT_LABELS: Record<Slot, string> = {
-  daily: 'Add your Daily Goal',
-  weekly: 'Add your Weekly Goal',
-  monthly: 'Add your Monthly Goal',
+  daily: 'Add a Daily Goal',
+  weekly: 'Add a Weekly Goal',
+  monthly: 'Add a Monthly Goal',
 };
 
 const EMOJIS = ['🎯','💼','📈','💬','📋','⚡','🔥','💪','🏆','📞','🤝','💰','🚀','⭐','🎪'];
 
 export default function AddGoalModal({ player, onAdd, onClose }: Props) {
-  const takenSlots = new Set(player.goals.map(g => g.slot));
-  const missingSlot: Slot = (['daily', 'weekly', 'monthly'] as Slot[]).find(s => !takenSlots.has(s)) ?? 'daily';
-  const allowedTypes = SLOT_TYPES[missingSlot];
+  const [slot, setSlot] = useState<Slot>('daily');
+  const allowedTypes = SLOT_TYPES[slot];
 
   const [type, setType] = useState<GoalType>(allowedTypes[0]);
   const [title, setTitle] = useState('');
@@ -44,13 +43,17 @@ export default function AddGoalModal({ player, onAdd, onClose }: Props) {
   const [targetRate, setTargetRate] = useState('15');
   const [targetTotal, setTargetTotal] = useState('');
   const [cumUnit, setCumUnit] = useState('');
-  const [cumPeriod, setCumPeriod] = useState<'daily' | 'monthly' | 'weekly'>(
-    missingSlot === 'weekly' ? 'weekly' : missingSlot === 'daily' ? 'daily' : 'monthly'
-  );
+  const [cumPeriod, setCumPeriod] = useState<'daily' | 'monthly' | 'weekly'>('daily');
+
+  const selectSlot = (s: Slot) => {
+    setSlot(s);
+    setType(SLOT_TYPES[s][0]);
+    setCumPeriod(s);
+  };
 
   const submit = () => {
     if (!title.trim()) return;
-    const base = { slot: missingSlot, title: title.trim(), description: desc.trim(), emoji, logs: [] };
+    const base = { slot, title: title.trim(), description: desc.trim(), emoji, logs: [] };
     if (type === 'rate') {
       onAdd({ ...base, type: 'rate', unit: unit||'rate', targetRate: parseInt(targetRate)||15 });
     } else if (type === 'cumulative') {
@@ -74,9 +77,19 @@ export default function AddGoalModal({ player, onAdd, onClose }: Props) {
           <AnimalAvatarImg animal={player.avatar} size={44}/>
           <div className="flex-1">
             <div className="font-black text-white text-sm" style={{ fontFamily: 'Oswald' }}>{player.name}</div>
-            <div className="text-xs text-white/50">{SLOT_LABELS[missingSlot]}</div>
+            <div className="text-xs text-white/50">{SLOT_LABELS[slot]}</div>
           </div>
           <button onClick={onClose} className="text-white/30 hover:text-white text-xl p-1">✕</button>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          {(['daily', 'weekly', 'monthly'] as Slot[]).map(s => (
+            <button key={s} onClick={() => selectSlot(s)}
+              className="py-1.5 rounded-lg text-xs font-bold transition-all capitalize"
+              style={{ background: slot===s ? 'rgba(249,201,35,0.2)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${slot===s ? 'rgba(249,201,35,0.6)' : 'transparent'}`, color: slot===s ? '#f9c923' : 'rgba(255,255,255,0.5)' }}>
+              {s}
+            </button>
+          ))}
         </div>
 
         <div className="flex flex-wrap gap-1.5 mb-3">

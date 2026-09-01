@@ -111,28 +111,34 @@ function CustomForm({ slot, onAdd }: { slot: Slot; onAdd: (g: Goal) => void }) {
   );
 }
 
-function GoalSlot({ label, color, goal, slot, onSelect, onRemove }: {
-  label: string; color: string; goal: Goal | null;
-  slot: Slot; onSelect: (g: Goal) => void; onRemove: () => void;
+function GoalSlot({ label, color, goals, slot, onAdd, onRemove }: {
+  label: string; color: string; goals: Goal[];
+  slot: Slot; onAdd: (g: Goal) => void; onRemove: (id: string) => void;
 }) {
+  const [adding, setAdding] = useState(goals.length === 0);
   return (
     <div className="rounded-xl overflow-hidden" style={{ border: `1.5px solid ${color}30` }}>
       <div className="px-3 py-2 flex items-center justify-between" style={{ background: `${color}12` }}>
         <span className="text-xs font-black uppercase tracking-widest" style={{ color }}>{label}</span>
-        {goal && <span className="text-[10px] text-white/40">✓ set</span>}
+        {goals.length > 0 && <span className="text-[10px] text-white/40">✓ {goals.length} set</span>}
       </div>
-      <div className="p-3" style={{ background: 'rgba(0,0,0,0.2)' }}>
-        {goal ? (
-          <div className="flex items-center gap-2 p-2.5 rounded-xl" style={{ background:'rgba(0,0,0,0.3)', border:`1px solid ${TYPE_INFO[goal.type as GoalType]?.color}40` }}>
+      <div className="p-3 space-y-2" style={{ background: 'rgba(0,0,0,0.2)' }}>
+        {goals.map(goal => (
+          <div key={goal.id} className="flex items-center gap-2 p-2.5 rounded-xl" style={{ background:'rgba(0,0,0,0.3)', border:`1px solid ${TYPE_INFO[goal.type as GoalType]?.color}40` }}>
             <span className="text-lg">{goal.emoji}</span>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-bold text-white leading-tight">{goal.title}</div>
               <div className="text-[10px] mt-0.5" style={{ color:TYPE_INFO[goal.type as GoalType]?.color }}>{TYPE_INFO[goal.type as GoalType]?.label}</div>
             </div>
-            <button onClick={onRemove} className="text-white/30 hover:text-red-400 transition-colors p-1 text-sm">✕</button>
+            <button onClick={() => onRemove(goal.id)} className="text-white/30 hover:text-red-400 transition-colors p-1 text-sm">✕</button>
           </div>
+        ))}
+        {adding ? (
+          <CustomForm slot={slot} onAdd={g => { onAdd(g); setAdding(false); }}/>
         ) : (
-          <CustomForm slot={slot} onAdd={onSelect}/>
+          <button onClick={() => setAdding(true)} className="w-full py-2 rounded-lg text-xs font-bold text-white/50 hover:text-white transition-colors" style={{ background:'rgba(255,255,255,0.06)', border:'1px dashed rgba(255,255,255,0.15)' }}>
+            + Add another
+          </button>
         )}
       </div>
     </div>
@@ -143,15 +149,13 @@ export default function OnboardingFlow({ takenAvatars, onComplete }: Props) {
   const [step, setStep] = useState<Step>('avatar');
   const [animal, setAnimal] = useState<AnimalKind | null>(null);
   const [name, setName] = useState('');
-  const [dailyGoal, setDailyGoal] = useState<Goal | null>(null);
-  const [weeklyGoal, setWeeklyGoal] = useState<Goal | null>(null);
-  const [monthlyGoal, setMonthlyGoal] = useState<Goal | null>(null);
-
-  const allSet = !!dailyGoal && !!weeklyGoal;
+  const [dailyGoals, setDailyGoals] = useState<Goal[]>([]);
+  const [weeklyGoals, setWeeklyGoals] = useState<Goal[]>([]);
+  const [monthlyGoals, setMonthlyGoals] = useState<Goal[]>([]);
 
   const finish = () => {
-    if (!animal || !name.trim() || !allSet) return;
-    const goals = [dailyGoal!, weeklyGoal!, ...(monthlyGoal ? [monthlyGoal] : [])];
+    if (!animal || !name.trim()) return;
+    const goals = [...dailyGoals, ...weeklyGoals, ...monthlyGoals];
     onComplete({ name: name.trim(), avatar: animal, jerseyColor: '', goals, onboarded: true });
   };
 
@@ -230,23 +234,26 @@ export default function OnboardingFlow({ takenAvatars, onComplete }: Props) {
                 <div className="text-xs text-white/40">{ANIMAL_NAMES[animal]}</div>
               </div>
               <div className="flex gap-1.5 text-sm">
-                <span title="Daily" style={{ opacity: dailyGoal ? 1 : 0.3 }}>☀️{dailyGoal ? '✅' : '⬜'}</span>
-                <span title="Weekly" style={{ opacity: weeklyGoal ? 1 : 0.3 }}>📅{weeklyGoal ? '✅' : '⬜'}</span>
-                <span title="Monthly" style={{ opacity: monthlyGoal ? 1 : 0.3 }}>🗓️{monthlyGoal ? '✅' : '⬜'}</span>
+                <span title="Daily" style={{ opacity: dailyGoals.length ? 1 : 0.3 }}>☀️{dailyGoals.length ? '✅' : '⬜'}</span>
+                <span title="Weekly" style={{ opacity: weeklyGoals.length ? 1 : 0.3 }}>📅{weeklyGoals.length ? '✅' : '⬜'}</span>
+                <span title="Monthly" style={{ opacity: monthlyGoals.length ? 1 : 0.3 }}>🗓️{monthlyGoals.length ? '✅' : '⬜'}</span>
               </div>
             </div>
 
             <div className="space-y-4 mb-4">
-              <GoalSlot label="Daily Goal"   color="#4ade80" goal={dailyGoal}   slot="daily"   onSelect={setDailyGoal}   onRemove={() => setDailyGoal(null)}/>
-              <GoalSlot label="Weekly Goal"  color="#60a5fa" goal={weeklyGoal}  slot="weekly"  onSelect={setWeeklyGoal}  onRemove={() => setWeeklyGoal(null)}/>
-              <GoalSlot label="Monthly Goal (optional)" color="#a78bfa" goal={monthlyGoal} slot="monthly" onSelect={setMonthlyGoal} onRemove={() => setMonthlyGoal(null)}/>
+              <GoalSlot label="Daily Goal"   color="#4ade80" goals={dailyGoals}   slot="daily"
+                onAdd={g => setDailyGoals(gs => [...gs, g])}   onRemove={id => setDailyGoals(gs => gs.filter(g => g.id !== id))}/>
+              <GoalSlot label="Weekly Goal"  color="#60a5fa" goals={weeklyGoals}  slot="weekly"
+                onAdd={g => setWeeklyGoals(gs => [...gs, g])}  onRemove={id => setWeeklyGoals(gs => gs.filter(g => g.id !== id))}/>
+              <GoalSlot label="Monthly Goal" color="#a78bfa" goals={monthlyGoals} slot="monthly"
+                onAdd={g => setMonthlyGoals(gs => [...gs, g])} onRemove={id => setMonthlyGoals(gs => gs.filter(g => g.id !== id))}/>
             </div>
 
             <div className="flex gap-3">
               <button onClick={()=>setStep('name')} className="px-4 py-2.5 rounded-xl text-sm text-white/50" style={{ background:'rgba(255,255,255,0.08)' }}>← Back</button>
-              <button onClick={finish} disabled={!allSet}
-                className="flex-1 py-3 rounded-xl font-black text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105 transition-transform active:scale-95"
-                style={{ background: allSet?'#f9c923':'rgba(255,255,255,0.2)', color:'#1a1a1a', fontFamily:'Oswald', letterSpacing:'0.05em' }}>
+              <button onClick={finish}
+                className="flex-1 py-3 rounded-xl font-black text-sm hover:scale-105 transition-transform active:scale-95"
+                style={{ background:'#f9c923', color:'#1a1a1a', fontFamily:'Oswald', letterSpacing:'0.05em' }}>
                 ⚽ KICK OFF!
               </button>
             </div>

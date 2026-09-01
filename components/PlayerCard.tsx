@@ -181,9 +181,6 @@ export default function PlayerCard({
   expanded = false, onToggle, isMe = false
 }: Props) {
   const overall = getPlayerOverall(player);
-  const takenSlots = new Set(player.goals.map(g => g.slot));
-  const missingSlot = (['daily', 'weekly', 'monthly'] as const).find(s => !takenSlots.has(s));
-  const needsGoal = !!missingSlot;
   // complete = every goal truly hit its target (raw), not just pace-adjusted
   const complete = player.goals.length > 0 && player.goals.every(goal =>
     goal.type === 'cumulative'
@@ -233,9 +230,7 @@ export default function PlayerCard({
         <div className="flex-1 min-w-0">
           <div className="font-black text-white text-base leading-tight" style={{ fontFamily: 'Oswald' }}>{player.name}</div>
           <div className="text-xs text-white/40 mt-0.5">
-            {!needsGoal ? 'daily + weekly + monthly'
-              : takenSlots.size === 0 ? 'no goals yet'
-              : `add ${missingSlot} goal`} · {expanded ? 'collapse ▲' : 'expand ▼'}
+            {player.goals.length === 0 ? 'no goals yet' : `${player.goals.length} goal${player.goals.length === 1 ? '' : 's'} set`} · {expanded ? 'collapse ▲' : 'expand ▼'}
           </div>
           <div className="mt-2 space-y-1.5">
             {goalBars.map((b, i) => (
@@ -268,13 +263,11 @@ export default function PlayerCard({
               );
             })
           }
-          {needsGoal && (
-            <button onClick={() => onAddGoal(player)}
-              className="w-full py-2 rounded-xl text-xs font-semibold text-white/50 hover:text-white transition-colors"
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px dashed rgba(255,255,255,0.15)' }}>
-              + Add {missingSlot} goal
-            </button>
-          )}
+          <button onClick={() => onAddGoal(player)}
+            className="w-full py-2 rounded-xl text-xs font-semibold text-white/50 hover:text-white transition-colors"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px dashed rgba(255,255,255,0.15)' }}>
+            + Add goal
+          </button>
           <button onClick={() => { if (window.confirm(`Remove ${player.name} from the team?`)) onDeletePlayer(player); }}
             className="w-full py-2 rounded-xl text-xs font-semibold text-red-400/60 hover:text-red-400 transition-colors"
             style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>

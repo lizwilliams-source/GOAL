@@ -1,6 +1,9 @@
 import { getSupabase } from './supabase';
 import { AppData, Player, Goal, RateGoal, HabitGoal, CumulativeGoal, AnimalKind } from '../types';
 
+const TEAM_ID = process.env.NEXT_PUBLIC_TEAM_ID ?? 'sales-squad-fc';
+const TEAM_NAME = process.env.NEXT_PUBLIC_TEAM_NAME ?? 'Sales Squad FC';
+
 export async function loadData(): Promise<AppData> {
   const [
     { data: players },
@@ -9,7 +12,7 @@ export async function loadData(): Promise<AppData> {
     { data: habitLogs },
     { data: cumulativeLogs },
   ] = await Promise.all([
-    getSupabase().from('players').select('*').order('created_at'),
+    getSupabase().from('players').select('*').eq('team_id', TEAM_ID).order('created_at'),
     getSupabase().from('goals').select('*').order('created_at'),
     getSupabase().from('rate_logs').select('*').order('date'),
     getSupabase().from('habit_logs').select('*').order('date'),
@@ -54,7 +57,7 @@ export async function loadData(): Promise<AppData> {
   });
 
   return {
-    teamName: 'Sales Squad FC',
+    teamName: TEAM_NAME,
     month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
     players: mappedPlayers,
   };
@@ -65,6 +68,7 @@ export async function createPlayer(playerData: Omit<Player, 'id' | 'createdAt'>)
     name: playerData.name,
     avatar: playerData.avatar,
     jersey_color: playerData.jerseyColor,
+    team_id: TEAM_ID,
   }).select('id').single();
   const playerId = (data as { id: string }).id;
   for (const goal of playerData.goals) await addGoal(playerId, goal);
